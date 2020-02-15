@@ -1,0 +1,13 @@
+[package]
+name = "uptown"
+publish = false
+version = "0.1.0"
+authors = ["Kristofer Rye <kristofer.rye@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+hyper = "~0.13.2"
+log = "~0.4.8"
+pretty_env_logger = "~0.4.0"
+tokio = { version = "~0.2.11", features = [ "macros" ] }
+warp = "~0.2.1"
