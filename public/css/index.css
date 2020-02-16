@@ -1,0 +1,6 @@
+div.leaflet-control.uptown-controls {
+	display: flex;
+	width: 16px;
+	height: 16px;
+	background-color: #404040;
+}
