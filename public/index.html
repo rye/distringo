@@ -16,7 +16,12 @@
 
 		<script src="js/index.js"></script>
 		<script>
-		let map = L.map('map');
+		let map = L.map('map', {
+			center: {lat: 39.8333333, lng: -98.585522},
+			zoom: 3.0,
+			zoomSnap: 0.25,
+			zoomDelta: 0.25,
+		});
 		</script>
 	</body>
 </html>
