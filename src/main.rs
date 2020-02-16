@@ -11,12 +11,18 @@ async fn main() {
 	pretty_env_logger::init();
 
 	// GET / => (fs ./public/index.html)
+	let slash = warp::get()
+		.and(warp::path::end())
+		.and(warp::fs::file("./public/index.html"));
 
 	// GET /[path/to/files] => (fs ./public/[path/to/files])
+	let public_files = warp::get()
+		.and(warp::fs::dir("./public/"))
+		.and(warp::path::end());
 
 	// Compose the routes together.
 	let routes = warp::any()
-		.map(warp::reply)
+		.and(warp::get().and(slash.or(public_files)))
 		.with(warp::log("uptown"))
 		.recover(handle_rejection);
 
