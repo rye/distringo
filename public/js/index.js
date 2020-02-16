@@ -10,3 +10,11 @@ L.Control.Uptown = L.Control.extend({
 });
 
 L.control.uptown = function(opts) { return new L.Control.Uptown(opts); }
+
+function getMapState() {
+	try {
+		return JSON.parse(window.sessionStorage.mapState);
+	} catch {
+		return {};
+	}
+};

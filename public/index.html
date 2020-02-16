@@ -16,11 +16,27 @@
 
 		<script src="js/index.js"></script>
 		<script>
+		let mapState = getMapState();
+
+		let [center, zoom] = [
+			mapState.center || {lat: 39.8333333, lng: -98.585522},
+			mapState.zoom || 3.0,
+		];
+
 		let map = L.map('map', {
-			center: {lat: 39.8333333, lng: -98.585522},
-			zoom: 3.0,
+			center: center,
+			zoom: zoom,
 			zoomSnap: 0.25,
 			zoomDelta: 0.25,
+		});
+
+		window.addEventListener('unload', e => {
+			let mapState = {
+				center: map.getCenter(),
+				zoom: map.getZoom(),
+			};
+
+			window.sessionStorage.mapState = JSON.stringify(mapState);
 		});
 		</script>
 	</body>
