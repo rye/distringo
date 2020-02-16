@@ -30,6 +30,8 @@
 			zoomDelta: 0.25,
 		});
 
+		L.control.uptown({ position: 'topright' }).addTo(map);
+
 		window.addEventListener('unload', e => {
 			let mapState = {
 				center: map.getCenter(),
