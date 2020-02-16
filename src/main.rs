@@ -4,6 +4,10 @@ use warp::{Filter, Rejection, Reply};
 
 #[tokio::main]
 async fn main() {
+	if std::env::var("RUST_LOG").ok().is_none() {
+		std::env::set_var("RUST_LOG", "info");
+	}
+
 	pretty_env_logger::init();
 
 	// GET / => (fs ./public/index.html)
