@@ -1,6 +1,7 @@
 L.Control.Uptown = L.Control.extend({
 	onAdd: function(map) {
 		let element = L.DomUtil.create('div');
+		element.classList.add('uptown-controls');
 		return element;
 	},
 
