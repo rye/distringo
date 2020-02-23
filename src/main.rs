@@ -2,6 +2,25 @@ use hyper::StatusCode;
 use log::warn;
 use warp::{Filter, Rejection, Reply};
 
+
+#[derive(Debug)]
+enum Error {
+	Io(std::io::Error),
+	ParseInt(std::num::ParseIntError),
+}
+
+type Result<T> = core::result::Result<T, Error>;
+
+impl From<std::io::Error> for Error {
+	fn from(e: std::io::Error) -> Error {
+		Self::Io(e)
+	}
+}
+
+impl From<std::num::ParseIntError> for Error {
+	fn from(e: std::num::ParseIntError) -> Error {
+		Self::ParseInt(e)
+	}
 #[tokio::main]
 async fn main() {
 	if std::env::var("RUST_LOG").ok().is_none() {
@@ -29,7 +48,7 @@ async fn main() {
 	warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
-async fn handle_rejection(err: Rejection) -> Result<impl Reply, core::convert::Infallible> {
+async fn handle_rejection(err: Rejection) -> core::result::Result<impl Reply, core::convert::Infallible> {
 	if err.is_not_found() {
 		Ok(warp::reply::with_status(
 			warp::reply::html(include_str!("404.html")),
