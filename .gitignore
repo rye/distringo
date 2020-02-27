@@ -1,1 +1,11 @@
+# Built binary artifacts
 /target
+
+# Data that we've generated and acquired from places
+*.geojson
+*.pl
+*.sf*
+*.zip
+*.txt
+*.pdf
+*.png
