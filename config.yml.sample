@@ -1,0 +1,14 @@
+server:
+  bind:
+  - host: 0.0.0.0
+    port: 2020
+  - host: ::
+    port: 2020
+
+datasets:
+- in2010-pl94171:
+  packing_list: in2010.pl.prd.packinglist.txt
+  header: ingeo2010.pl
+  files:
+  - in000012010.pl
+  - in000022010.pl
