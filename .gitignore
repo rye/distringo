@@ -1,6 +1,9 @@
 # Built binary artifacts
 /target
 
+# The configuration
+/config.yml
+
 # Data that we've generated and acquired from places
 *.geojson
 *.pl
