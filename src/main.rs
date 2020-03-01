@@ -2,7 +2,6 @@ use hyper::StatusCode;
 use log::warn;
 use warp::{Filter, Rejection, Reply};
 
-
 #[derive(Debug)]
 enum Error {
 	Io(std::io::Error),
@@ -50,7 +49,9 @@ async fn main() {
 	warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
-async fn handle_rejection(err: Rejection) -> core::result::Result<impl Reply, core::convert::Infallible> {
+async fn handle_rejection(
+	err: Rejection,
+) -> core::result::Result<impl Reply, core::convert::Infallible> {
 	if err.is_not_found() {
 		Ok(warp::reply::with_status(
 			warp::reply::html(include_str!("404.html")),
