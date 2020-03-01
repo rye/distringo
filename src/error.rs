@@ -1,5 +1,5 @@
-use std::io;
 use core::{num, result};
+use std::io;
 
 #[derive(Debug)]
 #[non_exhaustive]
