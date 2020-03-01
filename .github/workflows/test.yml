@@ -1,0 +1,76 @@
+name: Check and Test
+
+on:
+  push:
+  schedule:
+  - cron: 15 */6 * * *
+
+jobs:
+  check:
+    name: Check the code
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly]
+    steps:
+    - name: Install the appropriate Rust toolchain
+      run: |
+        rustup toolchain install ${{ matrix.rust }}
+        rustup default ${{ matrix.rust }}
+    - uses: actions/checkout@v1
+    - name: Run rustfmt
+      run: |
+        rustup component add rustfmt
+        cargo fmt -- --check
+    - name: Run clippy
+      run: |
+        rustup component add clippy
+        cargo clippy --all-features -- -D clippy::all -W clippy::cargo -W clippy::pedantic
+
+  test:
+    name: Test the code
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly]
+    steps:
+    - name: Install the appropriate Rust toolchain
+      run: |
+        rustup toolchain install ${{ matrix.rust }}
+        rustup default ${{ matrix.rust }}
+    - uses: actions/checkout@v1
+    - name: Run cargo test
+      run: |
+        cargo test --all-features --no-fail-fast
+
+  coverage:
+    name: Measure test coverage
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [nightly]
+    steps:
+    - name: Install the appropriate Rust toolchain
+      run: |
+        rustup toolchain install ${{ matrix.rust }}
+        rustup default ${{ matrix.rust }}
+    - uses: actions/checkout@v1
+    - name: Run tests with profiling
+      run: |
+        cargo test --all-features --no-fail-fast
+      env:
+        CARGO_INCREMENTAL: '0'
+        RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads'
+    - uses: actions-rs/grcov@v0.1
+      with:
+        config: .grcov.yml
+    - name: Upload coverage
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: bash <(curl -s https://codecov.io/bash) -X gcov
+    - uses: actions/upload-artifact@v1
+      with:
+        name: lcov.info
+        path: ./lcov.info
