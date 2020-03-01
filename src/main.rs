@@ -21,6 +21,8 @@ impl From<std::num::ParseIntError> for Error {
 	fn from(e: std::num::ParseIntError) -> Error {
 		Self::ParseInt(e)
 	}
+}
+
 #[tokio::main]
 async fn main() {
 	if std::env::var("RUST_LOG").ok().is_none() {
