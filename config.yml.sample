@@ -1,12 +1,20 @@
 server:
   bind:
-    host: ::
+    host: '::'
     port: 2020
 
 datasets:
-- in2010-pl94171:
+- in2010-pl94_171:
   packing_list: in2010.pl.prd.packinglist.txt
-  header: ingeo2010.pl
-  files:
-  - in000012010.pl
-  - in000022010.pl
+
+shapefiles:
+- tippecanoe_tabblock_2010:
+  type: tabblock
+  file: tl_2010_18157_tabblock10.geojson
+
+sessions:
+- tippecanoe-2010:
+  datasets:
+  - in2010-pl94_171
+  shapefiles:
+  - tippecanoe_tabblock_2010
