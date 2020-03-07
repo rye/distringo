@@ -1,26 +1,7 @@
 use hyper::StatusCode;
 use log::warn;
+
 use warp::{Filter, Rejection, Reply};
-
-#[derive(Debug)]
-enum Error {
-	Io(std::io::Error),
-	ParseInt(std::num::ParseIntError),
-}
-
-type Result<T> = core::result::Result<T, Error>;
-
-impl From<std::io::Error> for Error {
-	fn from(e: std::io::Error) -> Error {
-		Self::Io(e)
-	}
-}
-
-impl From<std::num::ParseIntError> for Error {
-	fn from(e: std::num::ParseIntError) -> Error {
-		Self::ParseInt(e)
-	}
-}
 
 #[tokio::main]
 async fn main() {
@@ -29,6 +10,15 @@ async fn main() {
 	}
 
 	pretty_env_logger::init();
+
+	let _data = uptown::parser::pl94_171::Dataset::load(
+		uptown::schema::GeographicalHeaderSchema::Census2010,
+		"./in2010.pl.prd.packinglist.txt",
+		"./ingeo2010.pl",
+		vec!["./in000012010.pl", "./in000022010.pl"],
+	);
+
+	// println!("{:#?}", data);
 
 	// GET / => (fs ./public/index.html)
 	let slash = warp::get()
