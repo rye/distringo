@@ -1,10 +1,13 @@
 use crate::error::Result;
 use crate::parser::common::LogicalRecord;
+use crate::parser::packing_list::PackingList;
+use crate::schema::CensusDataSchema;
+use std::collections::BTreeSet;
 use std::path::Path;
 
 pub struct Dataset {
-	schema: crate::schema::CensusDataSchema,
-	data: std::collections::btree_set::BTreeSet<LogicalRecord>,
+	schema: CensusDataSchema,
+	data: BTreeSet<LogicalRecord>,
 }
 
 impl Dataset {
@@ -13,21 +16,21 @@ impl Dataset {
 		geographical_header: Pa,
 		files: Vec<Pa>,
 	) -> Result<Self> {
-		let packing_list: crate::parser::packing_list::PackingList =
-			crate::parser::packing_list::PackingList::from_file(packing_list)?;
-		let schema: crate::schema::CensusDataSchema = packing_list.schema();
-		let data: std::collections::BTreeSet<LogicalRecord> =
+		let packing_list: PackingList =
+			PackingList::from_file(packing_list)?;
+		let schema: CensusDataSchema = packing_list.schema();
+		let data: BTreeSet<LogicalRecord> =
 			Self::load_data(schema, packing_list, geographical_header, files)?;
 
 		Ok(Dataset { schema, data })
 	}
 
 	fn parse_geographical_header_line(
-		schema: &crate::schema::CensusDataSchema,
+		schema: &CensusDataSchema,
 		line: String,
 	) -> Result<LogicalRecord> {
 		match schema {
-			crate::schema::CensusDataSchema::Census2010Pl94_171 => {
+			CensusDataSchema::Census2010Pl94_171 => {
 				let number: usize = line
 					[crate::parser::fields::census2010::pl94_171::geographical_header::LOGRECNO]
 					.parse()?;
@@ -47,7 +50,7 @@ impl Dataset {
 	}
 
 	fn parse_geographic_header(
-		schema: crate::schema::CensusDataSchema,
+		schema: CensusDataSchema,
 		stream: impl Iterator<Item = std::io::Result<String>> + 'static,
 	) -> impl Iterator<Item = Result<LogicalRecord>> + 'static {
 		stream
@@ -58,11 +61,11 @@ impl Dataset {
 	}
 
 	fn load_data<P: AsRef<Path> + core::fmt::Display>(
-		schema: crate::schema::CensusDataSchema,
-		packing_list: crate::parser::packing_list::PackingList,
+		schema: CensusDataSchema,
+		packing_list: PackingList,
 		header: P,
 		files: Vec<P>,
-	) -> Result<std::collections::BTreeSet<LogicalRecord>> {
+	) -> Result<BTreeSet<LogicalRecord>> {
 		// A dataset _is_ a BTreeSet because it does have some order.
 		let dataset = {
 			log::debug!("Loading header file {}", header);
