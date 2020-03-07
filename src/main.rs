@@ -12,7 +12,6 @@ async fn main() {
 	pretty_env_logger::init();
 
 	let data = uptown::parser::pl94_171::Dataset::load(
-		uptown::schema::CensusDataSchema::Census2010Pl94_171,
 		"./in2010.pl.prd.packinglist.txt",
 		"./ingeo2010.pl",
 		vec!["./in000012010.pl", "./in000022010.pl"],

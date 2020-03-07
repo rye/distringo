@@ -8,28 +8,31 @@ pub struct Dataset {
 }
 
 impl Dataset {
-	pub fn load<Pa: std::fmt::Display + AsRef<Path>> (
-		schema: crate::schema::CensusDataSchema,
+	pub fn load<Pa: std::fmt::Display + AsRef<Path>>(
 		packing_list: Pa,
 		geographical_header: Pa,
 		files: Vec<Pa>,
 	) -> Result<Self> {
-		let data: std::collections::BTreeSet<LogicalRecord> = Self::load_data(packing_list, geographical_header, files)?;
+		let packing_list: crate::parser::packing_list::PackingList =
+			crate::parser::packing_list::PackingList::from_file(packing_list)?;
+		let schema: crate::schema::CensusDataSchema = packing_list.schema();
+		let data: std::collections::BTreeSet<LogicalRecord> =
+			Self::load_data(schema, packing_list, geographical_header, files)?;
 
-		Ok(Dataset {
-			schema,
-			data,
-		})
+		Ok(Dataset { schema, data })
 	}
 
 	fn parse_geographical_header_line(
-		schema: &crate::schema::GeographicalHeaderSchema,
+		schema: &crate::schema::CensusDataSchema,
 		line: String,
 	) -> Result<LogicalRecord> {
 		match schema {
-			crate::schema::GeographicalHeaderSchema::Census2010 => {
-				let number: usize = line[crate::parser::fields::census2010::pl94_171::geographical_header::LOGRECNO].parse()?;
-				let name: String = line[crate::parser::fields::census2010::pl94_171::geographical_header::NAME]
+			crate::schema::CensusDataSchema::Census2010Pl94_171 => {
+				let number: usize = line
+					[crate::parser::fields::census2010::pl94_171::geographical_header::LOGRECNO]
+					.parse()?;
+				let name: String = line
+					[crate::parser::fields::census2010::pl94_171::geographical_header::NAME]
 					.trim()
 					.to_string();
 
@@ -44,7 +47,7 @@ impl Dataset {
 	}
 
 	fn parse_geographic_header(
-		schema: crate::schema::GeographicalHeaderSchema,
+		schema: crate::schema::CensusDataSchema,
 		stream: impl Iterator<Item = std::io::Result<String>> + 'static,
 	) -> impl Iterator<Item = Result<LogicalRecord>> + 'static {
 		stream
@@ -55,13 +58,11 @@ impl Dataset {
 	}
 
 	fn load_data<P: AsRef<Path> + core::fmt::Display>(
-		packing_list: P,
+		schema: crate::schema::CensusDataSchema,
+		packing_list: crate::parser::packing_list::PackingList,
 		header: P,
 		files: Vec<P>,
 	) -> Result<std::collections::BTreeSet<LogicalRecord>> {
-		use crate::parser::packing_list::PackingList;
-		let packing_list: PackingList = PackingList::from_file(packing_list)?;
-
 		// A dataset _is_ a BTreeSet because it does have some order.
 		let dataset = {
 			log::debug!("Loading header file {}", header);
@@ -71,16 +72,11 @@ impl Dataset {
 
 			use std::io::BufRead;
 			// TODO parse out schema information from PL
-			Self::parse_geographic_header(
-				crate::schema::GeographicalHeaderSchema::Census2010,
-				reader.lines(),
-			)
-			.filter_map(Result::ok)
-			.collect()
+			Self::parse_geographic_header(schema, reader.lines())
+				.filter_map(Result::ok)
+				.collect()
 		};
 
 		Ok(dataset)
 	}
-
 }
-

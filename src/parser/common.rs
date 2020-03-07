@@ -2,10 +2,7 @@ use core::ops::Range;
 
 use std::collections::{BTreeSet, HashMap};
 
-use crate::schema::GeographicalHeaderSchema;
-
 pub struct GeographicalHeader {
-	schema: GeographicalHeaderSchema,
 	records: BTreeSet<LogicalRecord>,
 }
 
