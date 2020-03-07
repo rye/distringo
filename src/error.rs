@@ -6,6 +6,9 @@ use std::io;
 pub enum Error {
 	Io(io::Error),
 	ParseInt(num::ParseIntError),
+
+	ParsePackingListLine,
+	ParsePackingListFilename,
 }
 
 pub type Result<T> = result::Result<T, Error>;

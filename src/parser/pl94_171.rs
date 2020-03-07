@@ -2,15 +2,19 @@ use crate::error::Result;
 use crate::parser::common::LogicalRecord;
 use std::path::Path;
 
+pub struct Dataset {
+	schema: crate::schema::CensusDataSchema,
+	data: std::collections::btree_set::BTreeSet<LogicalRecord>,
+}
+
 impl Dataset {
 	pub fn load<Pa: std::fmt::Display + AsRef<Path>> (
-		schema: crate::schema::GeographicalHeaderSchema,
+		schema: crate::schema::CensusDataSchema,
 		packing_list: Pa,
 		geographical_header: Pa,
 		files: Vec<Pa>,
 	) -> Result<Self> {
 		let data: std::collections::BTreeSet<LogicalRecord> = Self::load_data(packing_list, geographical_header, files)?;
-
 
 		Ok(Dataset {
 			schema,
@@ -53,16 +57,18 @@ impl Dataset {
 	fn load_data<P: AsRef<Path> + core::fmt::Display>(
 		packing_list: P,
 		header: P,
-		_data_files: Vec<P>,
+		files: Vec<P>,
 	) -> Result<std::collections::BTreeSet<LogicalRecord>> {
-		let _packing_list: crate::parser::packing_list::PackingList =
-			crate::parser::packing_list::PackingList::from_file(packing_list)?;
+		use crate::parser::packing_list::PackingList;
+		let packing_list: PackingList = PackingList::from_file(packing_list)?;
 
 		// A dataset _is_ a BTreeSet because it does have some order.
 		let dataset = {
 			log::debug!("Loading header file {}", header);
+
 			let file: std::fs::File = std::fs::File::open(header)?;
 			let reader = std::io::BufReader::new(file);
+
 			use std::io::BufRead;
 			// TODO parse out schema information from PL
 			Self::parse_geographic_header(
@@ -76,13 +82,5 @@ impl Dataset {
 		Ok(dataset)
 	}
 
-}
-
-pub struct Dataset {
-	schema: crate::schema::GeographicalHeaderSchema,
-	// packing_list: Pa,
-	// geographical_header: Pa,
-	// files: Vec<Pa>,
-	data: std::collections::btree_set::BTreeSet<LogicalRecord>,
 }
 
