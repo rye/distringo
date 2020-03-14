@@ -1,22 +1,18 @@
 use core::ops::Range;
 
-use std::collections::{BTreeSet, HashMap};
-
-pub struct GeographicalHeader {
-	records: BTreeSet<LogicalRecord>,
-}
+use std::collections::HashMap;
 
 #[derive(PartialEq, Eq)]
 pub struct LogicalRecord {
 	pub(crate) number: LogicalRecordNumber,
 	pub(crate) header: String,
-	pub(crate) records: Vec<Record>,
+	pub(crate) records: HashMap<String, Record>,
 }
 
 // TODO change out &'static str from something that's generated at compile-time according to definitions?
-type Record = HashMap<&'static str, String>;
+type Record = Vec<String>;
 
-type LogicalRecordNumber = usize;
+pub type LogicalRecordNumber = usize;
 
 impl PartialOrd for LogicalRecord {
 	fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {

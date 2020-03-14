@@ -1,5 +1,6 @@
 use crate::error::Result;
 use core::fmt::Display;
+use core::ops::Range;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -8,16 +9,18 @@ use std::path::{Path, PathBuf};
 use log::debug;
 use regex::Regex;
 
-#[derive(Debug)]
-struct SegmentationInformation {
+pub(crate) type SegmentedFileIndex = u32;
+
+#[derive(Clone, Debug)]
+pub(crate) struct SegmentationInformation {
 	table: String,
-	file_width: Vec<(u16, usize)>,
+	pub(crate) file_width: Vec<(SegmentedFileIndex, usize)>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 enum FileType {
 	HeaderFile(String),
-	TabularFile(u16),
+	TabularFile(SegmentedFileIndex),
 }
 
 #[derive(Clone, Debug)]
@@ -45,7 +48,7 @@ impl DatasetFile {
 		}
 	}
 
-	pub(crate) fn maybe_tabular_idx(&self) -> Option<(u16, PathBuf)> {
+	pub(crate) fn maybe_tabular_idx(&self) -> Option<(SegmentedFileIndex, PathBuf)> {
 		match self.ty {
 			FileType::TabularFile(n) => Some((n, self.filename.clone())),
 			_ => None,
@@ -64,7 +67,7 @@ impl DatasetFile {
 pub struct PackingList {
 	schema: crate::schema::CensusDataSchema,
 	files: Vec<DatasetFile>,
-	tables: BTreeMap<String, SegmentationInformation>,
+	tables: Vec<(String, SegmentationInformation)>,
 }
 
 impl PackingList {
@@ -74,6 +77,10 @@ impl PackingList {
 
 	pub(crate) fn files(&self) -> &Vec<DatasetFile> {
 		&self.files
+	}
+
+	pub(crate) fn tables(&self) -> &Vec<(String, SegmentationInformation)> {
+		&self.tables
 	}
 
 	pub(crate) fn header_file(&self) -> PathBuf {
@@ -86,7 +93,7 @@ impl PackingList {
 		header.filename.clone()
 	}
 
-	pub(crate) fn tabular_files(&self) -> BTreeMap<u16, PathBuf> {
+	pub(crate) fn tabular_files(&self) -> BTreeMap<SegmentedFileIndex, PathBuf> {
 		self
 			.files
 			.iter()
@@ -122,8 +129,8 @@ impl core::convert::TryFrom<String> for SegmentationInformation {
 
 		let file_width = caps["descriptor"]
 			.split(" ")
-			.map(|chunk: &str| -> Result<(u16, usize)> {
-				let file: u16 = chunk.split(":").collect::<Vec<&str>>()[0].parse()?;
+			.map(|chunk: &str| -> Result<(SegmentedFileIndex, usize)> {
+				let file: SegmentedFileIndex = chunk.split(":").collect::<Vec<&str>>()[0].parse()?;
 				let width: usize = chunk.split(":").collect::<Vec<&str>>()[1].parse()?;
 				Ok((file, width))
 			})
@@ -156,7 +163,7 @@ impl core::convert::TryFrom<String> for DatasetFile {
 		let year: String = filename_caps["year"].to_string();
 		let extension: String = filename_caps["type"].to_string();
 
-		let ty: FileType = match descriptor.parse::<u16>() {
+		let ty: FileType = match descriptor.parse::<SegmentedFileIndex>() {
 			Ok(index) => FileType::TabularFile(index),
 			Err(_) => FileType::HeaderFile(descriptor.clone()),
 		};
@@ -232,7 +239,19 @@ impl PackingList {
 			.expect("couldn't infer a schema")
 			.clone();
 
-		let tables: BTreeMap<String, SegmentationInformation> = BTreeMap::new();
+		let tables: Vec<(String, SegmentationInformation)> = {
+			lines
+				.iter()
+				.flat_map(|line: &Line| -> Option<&SegmentationInformation> {
+					match line {
+						Line::DataSegmentation(info) => Some(info),
+						_ => None,
+					}
+				})
+				.cloned()
+				.map(|si| -> (String, SegmentationInformation) { (si.table.clone(), si) })
+				.collect()
+		};
 
 		Ok(PackingList {
 			schema,

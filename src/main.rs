@@ -91,7 +91,26 @@ async fn main() -> uptown::error::Result<()> {
 						.into_str()?
 						.into();
 
-					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list)?);
+					let tables: Vec<String> = value
+						.get("tables")
+						.map(
+							|tables: &config::Value| -> uptown::error::Result<Vec<String>> {
+								let tables: Vec<String> = tables
+									.clone()
+									.into_array()?
+									.iter()
+									.map(|v: &config::Value| -> uptown::error::Result<String> {
+										Ok(v.clone().into_str()?)
+									})
+									.filter_map(Result::ok)
+									.collect();
+
+								Ok(tables)
+							},
+						)
+						.unwrap_or_else(|| Ok(Vec::new()))?;
+
+					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list, &tables)?);
 
 					Ok((name.to_string(), dataset))
 				},
