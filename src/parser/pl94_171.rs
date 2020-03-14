@@ -1,4 +1,3 @@
-use csv::StringRecord;
 use crate::error::Result;
 use crate::parser::common::{LogicalRecord, LogicalRecordNumber};
 use crate::parser::packing_list::PackingList;
@@ -6,6 +5,7 @@ use crate::parser::packing_list::SegmentationInformation;
 use crate::parser::packing_list::SegmentedFileIndex;
 use crate::schema::CensusDataSchema;
 use core::ops::Range;
+use csv::StringRecord;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -89,13 +89,26 @@ impl Dataset {
 		}
 
 		{
-			let mut raw_data: HashMap<SegmentedFileIndex, HashMap<LogicalRecordNumber, Vec<String>>> = HashMap::new();
+			let mut raw_data: HashMap<SegmentedFileIndex, HashMap<LogicalRecordNumber, Vec<String>>> =
+				HashMap::new();
 
-			let paths_to_load: HashMap<SegmentedFileIndex, PathBuf> = tables_to_load.iter().flat_map(|table| -> Vec<SegmentedFileIndex> {
-				table_locations.get(table).expect("couldn't locate table").iter().map(|segs| segs.0).collect()
-			}).map(|sidx| -> (SegmentedFileIndex, PathBuf) {
-				(sidx, tabular_files.get(&sidx).expect("invalid sidx").clone())
-			}).collect();
+			let paths_to_load: HashMap<SegmentedFileIndex, PathBuf> = tables_to_load
+				.iter()
+				.flat_map(|table| -> Vec<SegmentedFileIndex> {
+					table_locations
+						.get(table)
+						.expect("couldn't locate table")
+						.iter()
+						.map(|segs| segs.0)
+						.collect()
+				})
+				.map(|sidx| -> (SegmentedFileIndex, PathBuf) {
+					(
+						sidx,
+						tabular_files.get(&sidx).expect("invalid sidx").clone(),
+					)
+				})
+				.collect();
 
 			for (sidx, path) in paths_to_load {
 				log::debug!("Loading file {:?}", path);
@@ -103,13 +116,17 @@ impl Dataset {
 				let file: std::fs::File = std::fs::File::open(path)?;
 				let mut reader = csv::ReaderBuilder::new().from_reader(file);
 
-				let records: HashMap<LogicalRecordNumber, Vec<String>> = reader.records().map(|record| -> Result<(LogicalRecordNumber, Vec<String>)> {
-					let record: StringRecord = record?;
-					let number: LogicalRecordNumber = record[4].parse()?;
-					let record: Vec<String> = record.into_iter().map(|s| s.to_string()).collect();
+				let records: HashMap<LogicalRecordNumber, Vec<String>> = reader
+					.records()
+					.map(|record| -> Result<(LogicalRecordNumber, Vec<String>)> {
+						let record: StringRecord = record?;
+						let number: LogicalRecordNumber = record[4].parse()?;
+						let record: Vec<String> = record.into_iter().map(|s| s.to_string()).collect();
 
-					Ok((number, record))
-				}).flatten().collect();
+						Ok((number, record))
+					})
+					.flatten()
+					.collect();
 
 				raw_data.insert(sidx, records);
 			}
@@ -124,15 +141,20 @@ impl Dataset {
 					for (sidx, location) in locations {
 						log::debug!("{}: Loading from file {} at {:?}", table, sidx, location);
 
-						let file: &HashMap<LogicalRecordNumber, Vec<String>> = raw_data.get(sidx).expect("missing raw data");
+						let file: &HashMap<LogicalRecordNumber, Vec<String>> =
+							raw_data.get(sidx).expect("missing raw data");
 
 						for (logrecno, fields) in file.iter() {
 							let location: Range<usize> = location.clone();
 							let (logrecno, fields): (&LogicalRecordNumber, &Vec<String>) = (logrecno, fields);
-							let record: &mut LogicalRecord = data.get_mut(logrecno).expect("cannot add data to missing logical record");
+							let record: &mut LogicalRecord = data
+								.get_mut(logrecno)
+								.expect("cannot add data to missing logical record");
 							let tabular_data = &fields[location];
 
-							record.records.insert(table.to_string(), tabular_data.to_vec());
+							record
+								.records
+								.insert(table.to_string(), tabular_data.to_vec());
 						}
 					}
 				}
