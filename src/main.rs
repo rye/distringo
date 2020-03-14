@@ -1,6 +1,9 @@
 use config::Config;
 use hyper::{Response, StatusCode};
 use log::warn;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use uptown::parser::pl94_171::Dataset;
 
 use std::net::IpAddr;
 use std::net::SocketAddr;
@@ -72,11 +75,30 @@ async fn main() -> uptown::error::Result<()> {
 
 	settings.merge(config::File::with_name("config"))?;
 
-	let data = uptown::parser::pl94_171::Dataset::load(
-		"./in2010.pl.prd.packinglist.txt",
-		"./ingeo2010.pl",
-		vec!["./in000012010.pl", "./in000022010.pl"],
-	);
+	let datasets: HashMap<String, Box<Dataset>> = {
+		let datasets = settings.get_table("datasets")?;
+
+		datasets
+			.iter()
+			.map(
+				|(name, value)| -> uptown::error::Result<(String, Box<Dataset>)> {
+					let value: HashMap<String, config::Value> = value.clone().into_table()?;
+
+					let packing_list: PathBuf = value
+						.get("packing_list")
+						.ok_or(uptown::error::Error::MissingPackingList)?
+						.clone()
+						.into_str()?
+						.into();
+
+					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list)?);
+
+					Ok((name.to_string(), dataset))
+				},
+			)
+			.filter_map(Result::ok)
+			.collect()
+	};
 
 	let socket = {
 		use core::convert::TryInto;

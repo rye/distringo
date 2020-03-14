@@ -13,6 +13,8 @@ pub enum Error {
 
 	ParsePackingListLine,
 	ParsePackingListFilename,
+
+	MissingPackingList,
 }
 
 pub type Result<T> = result::Result<T, Error>;

@@ -10,7 +10,6 @@ pub struct GeographicalHeader {
 pub struct LogicalRecord {
 	pub(crate) number: LogicalRecordNumber,
 	pub(crate) header: String,
-	pub(crate) name: String,
 	pub(crate) records: Vec<Record>,
 }
 

@@ -3,7 +3,7 @@ use core::fmt::Display;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use log::debug;
 use regex::Regex;
@@ -21,8 +21,8 @@ enum FileType {
 }
 
 #[derive(Clone, Debug)]
-struct DatasetFile {
-	filename: String,
+pub(crate) struct DatasetFile {
+	filename: PathBuf,
 	extension: String,
 	stusab: String,
 	descriptor: String,
@@ -35,6 +35,20 @@ impl DatasetFile {
 		match self.ty {
 			FileType::TabularFile(_) => true,
 			_ => false,
+		}
+	}
+
+	fn is_header(&self) -> bool {
+		match self.ty {
+			FileType::HeaderFile(_) => true,
+			_ => false,
+		}
+	}
+
+	pub(crate) fn maybe_tabular_idx(&self) -> Option<(u16, PathBuf)> {
+		match self.ty {
+			FileType::TabularFile(n) => Some((n, self.filename.clone())),
+			_ => None,
 		}
 	}
 
@@ -58,7 +72,27 @@ impl PackingList {
 		self.schema
 	}
 
-	// pub fn locate_table(&self, table_id: &str) -> Vec<()
+	pub(crate) fn files(&self) -> &Vec<DatasetFile> {
+		&self.files
+	}
+
+	pub(crate) fn header_file(&self) -> PathBuf {
+		let header = self
+			.files
+			.iter()
+			.filter(|f| f.is_header())
+			.nth(0)
+			.expect("couldn't find a header file");
+		header.filename.clone()
+	}
+
+	pub(crate) fn tabular_files(&self) -> BTreeMap<u16, PathBuf> {
+		self
+			.files
+			.iter()
+			.flat_map(crate::parser::packing_list::DatasetFile::maybe_tabular_idx)
+			.collect()
+	}
 }
 
 use lazy_static::lazy_static;
@@ -127,6 +161,8 @@ impl core::convert::TryFrom<String> for DatasetFile {
 			Err(_) => FileType::HeaderFile(descriptor.clone()),
 		};
 
+		let filename: PathBuf = filename.into();
+
 		Ok(DatasetFile {
 			filename,
 			descriptor,
@@ -160,9 +196,7 @@ impl From<String> for Line {
 }
 
 impl PackingList {
-	pub fn from_file<P: AsRef<Path> + Display + Sized>(file: P) -> Result<PackingList> {
-		debug!("Loading packing list from {}", file);
-
+	pub fn from_file<P: AsRef<Path> + Sized>(file: P) -> Result<PackingList> {
 		let file: File = File::open(file)?;
 		let stream = BufReader::new(file);
 
