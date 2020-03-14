@@ -1,6 +1,4 @@
 use crate::error::Result;
-use core::fmt::Display;
-use core::ops::Range;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -55,9 +53,9 @@ impl DatasetFile {
 		}
 	}
 
-	fn schema(&self) -> crate::schema::CensusDataSchema {
+	fn schema(&self) -> crate::schema::CensusData {
 		match (&self.year[..], &self.extension[..]) {
-			("2010", "pl") => crate::schema::CensusDataSchema::Census2010Pl94_171,
+			("2010", "pl") => crate::schema::CensusData::Census2010Pl94_171,
 			(_, _) => unimplemented!(),
 		}
 	}
@@ -65,13 +63,13 @@ impl DatasetFile {
 
 #[derive(Debug)]
 pub struct PackingList {
-	schema: crate::schema::CensusDataSchema,
+	schema: crate::schema::CensusData,
 	files: Vec<DatasetFile>,
 	tables: Vec<(String, SegmentationInformation)>,
 }
 
 impl PackingList {
-	pub fn schema(&self) -> crate::schema::CensusDataSchema {
+	pub fn schema(&self) -> crate::schema::CensusData {
 		self.schema
 	}
 
@@ -87,8 +85,7 @@ impl PackingList {
 		let header = self
 			.files
 			.iter()
-			.filter(|f| f.is_header())
-			.nth(0)
+			.find(|f| f.is_header())
 			.expect("couldn't find a header file");
 		header.filename.clone()
 	}
@@ -128,10 +125,10 @@ impl core::convert::TryFrom<String> for SegmentationInformation {
 			.ok_or(crate::error::Error::ParsePackingListLine)?;
 
 		let file_width = caps["descriptor"]
-			.split(" ")
+			.split(' ')
 			.map(|chunk: &str| -> Result<(SegmentedFileIndex, usize)> {
-				let file: SegmentedFileIndex = chunk.split(":").collect::<Vec<&str>>()[0].parse()?;
-				let width: usize = chunk.split(":").collect::<Vec<&str>>()[1].parse()?;
+				let file: SegmentedFileIndex = chunk.split(':').collect::<Vec<&str>>()[0].parse()?;
+				let width: usize = chunk.split(':').collect::<Vec<&str>>()[1].parse()?;
 				Ok((file, width))
 			})
 			.filter_map(Result::ok)
@@ -209,8 +206,7 @@ impl PackingList {
 
 		let lines: Vec<Line> = stream
 			.lines()
-			.filter_map(std::io::Result::ok)
-			.map(Into::into)
+			.filter_map(|line| line.ok().map(Into::into))
 			.collect();
 
 		let files: Vec<DatasetFile> = {
@@ -226,18 +222,15 @@ impl PackingList {
 				.collect()
 		};
 
-		let schemas: std::collections::BTreeSet<crate::schema::CensusDataSchema> = files
+		let schemas: std::collections::BTreeSet<crate::schema::CensusData> = files
 			.iter()
-			.map(|file: &DatasetFile| -> crate::schema::CensusDataSchema { file.schema() })
+			.map(|file: &DatasetFile| -> crate::schema::CensusData { file.schema() })
 			.collect();
 
 		debug_assert!(schemas.len() == 1);
 
-		let schema: crate::schema::CensusDataSchema = schemas
-			.iter()
-			.nth(0)
-			.expect("couldn't infer a schema")
-			.clone();
+		let schema: crate::schema::CensusData =
+			*schemas.iter().next().expect("couldn't infer a schema");
 
 		let tables: Vec<(String, SegmentationInformation)> = {
 			lines

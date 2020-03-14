@@ -50,12 +50,10 @@ fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
 		.and(warp::path::end());
 
 	// Compose the routes together.
-	let routes = warp::any()
+	warp::any()
 		.and(warp::get().and(slash.or(public_files)).or(api()))
 		.with(warp::log("uptown"))
-		.recover(handle_rejection);
-
-	routes
+		.recover(handle_rejection)
 }
 
 #[tokio::main]

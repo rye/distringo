@@ -3,7 +3,7 @@ use crate::parser::common::{LogicalRecord, LogicalRecordNumber};
 use crate::parser::packing_list::PackingList;
 use crate::parser::packing_list::SegmentationInformation;
 use crate::parser::packing_list::SegmentedFileIndex;
-use crate::schema::CensusDataSchema;
+use crate::schema::CensusData;
 use core::ops::Range;
 use csv::StringRecord;
 use std::collections::BTreeMap;
@@ -11,24 +11,24 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub struct Dataset {
-	schema: CensusDataSchema,
+	schema: CensusData,
 	data: HashMap<LogicalRecordNumber, LogicalRecord>,
 }
 
 impl Dataset {
-	pub fn load<P: AsRef<Path>>(packing_list_file: P, tables_to_load: &Vec<String>) -> Result<Self> {
+	pub fn load<P: AsRef<Path>>(packing_list_file: P, tables_to_load: &[String]) -> Result<Self> {
 		let packing_list: PackingList = PackingList::from_file(&packing_list_file)?;
 
-		let schema: CensusDataSchema = packing_list.schema();
+		let schema: CensusData = packing_list.schema();
 
 		let mut data = HashMap::new();
 
 		{
+			use std::io::BufRead;
+
 			let header_file = packing_list.header_file();
 			let file: std::fs::File = std::fs::File::open(&header_file)?;
 			let reader = std::io::BufReader::new(file);
-
-			use std::io::BufRead;
 
 			for line in reader.lines() {
 				let line: String = line?.to_string();
@@ -69,10 +69,9 @@ impl Dataset {
 					.file_width
 					.iter()
 					.map(|(sidx, width)| -> (SegmentedFileIndex, Range<usize>) {
-						let start: usize = *current_columns.get(sidx).expect(&format!(
-							"failed to find segmented file with index {}",
-							sidx
-						));
+						let start: usize = *current_columns
+							.get(sidx)
+							.expect("failed to find segmented file");
 						let end: usize = start + width;
 						let range = start..end;
 
@@ -118,14 +117,13 @@ impl Dataset {
 
 				let records: HashMap<LogicalRecordNumber, Vec<String>> = reader
 					.records()
-					.map(|record| -> Result<(LogicalRecordNumber, Vec<String>)> {
+					.flat_map(|record| -> Result<(LogicalRecordNumber, Vec<String>)> {
 						let record: StringRecord = record?;
 						let number: LogicalRecordNumber = record[4].parse()?;
-						let record: Vec<String> = record.into_iter().map(|s| s.to_string()).collect();
+						let record: Vec<String> = record.into_iter().map(ToString::to_string).collect();
 
 						Ok((number, record))
 					})
-					.flatten()
 					.collect();
 
 				raw_data.insert(sidx, records);
@@ -135,7 +133,7 @@ impl Dataset {
 
 			for table in tables_to_load {
 				log::debug!("Loading table {}", table);
-				for locations in table_locations.get(table) {
+				if let Some(locations) = table_locations.get(table) {
 					log::debug!("{}: Loading from locations {:?}", table, locations);
 
 					for (sidx, location) in locations {
@@ -157,6 +155,8 @@ impl Dataset {
 								.insert(table.to_string(), tabular_data.to_vec());
 						}
 					}
+				} else {
+					log::warn!("{}: No locations!", table);
 				}
 			}
 		}
