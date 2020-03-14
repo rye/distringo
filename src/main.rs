@@ -1,22 +1,41 @@
-use hyper::StatusCode;
+use config::Config;
+use hyper::{Response, StatusCode};
 use log::warn;
+
+use std::net::IpAddr;
+use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-#[tokio::main]
-async fn main() {
-	if std::env::var("RUST_LOG").ok().is_none() {
-		std::env::set_var("RUST_LOG", "info");
-	}
+fn api() -> impl warp::Filter<Extract = impl Reply, Error = Rejection> + Clone {
+	// GET /api/data/tabblock/<year>/<fips_state>/<fips_county>
+	let tabblock = warp::get()
+		.and(warp::path!("tabblock" / u16 / u16 / u16))
+		.map(|year, fips_state, fips_county| {
+			Response::builder()
+				.body(format!(
+					"You requested data for year {} for {}{}",
+					year, fips_state, fips_county
+				))
+				.unwrap()
+		});
 
-	pretty_env_logger::init();
+	// GET /api/data/pl94_171/<year>/<stusab>
+	let pl94_171 = warp::get()
+		.and(warp::path!("pl94_171" / u16 / String))
+		.map(|year, stusab| {
+			Response::builder()
+				.body(format!(
+					"You requested PL94-171 data for year {} in state {}",
+					year, stusab
+				))
+				.unwrap()
+		});
 
-	let data = uptown::parser::pl94_171::Dataset::load(
-		"./in2010.pl.prd.packinglist.txt",
-		"./ingeo2010.pl",
-		vec!["./in000012010.pl", "./in000022010.pl"],
-	);
+	warp::path!("api" / "data").and(tabblock.or(pl94_171))
+}
 
+fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
 	// GET / => (fs ./public/index.html)
 	let slash = warp::get()
 		.and(warp::path::end())
@@ -29,13 +48,54 @@ async fn main() {
 
 	// Compose the routes together.
 	let routes = warp::any()
-		.and(warp::get().and(slash.or(public_files)))
+		.and(warp::get().and(slash.or(public_files)).or(api()))
 		.with(warp::log("uptown"))
 		.recover(handle_rejection);
 
-	warp::serve(routes)
-		.run(([0, 0, 0, 0, 0, 0, 0, 0], 2020))
-		.await
+	routes
+}
+
+#[tokio::main]
+async fn main() -> uptown::error::Result<()> {
+	if std::env::var("RUST_LOG").ok().is_none() {
+		std::env::set_var("RUST_LOG", "info");
+	}
+
+	pretty_env_logger::init();
+
+	let mut settings = Config::default();
+
+	settings.set_default("server.host", "::")?;
+	settings.set_default("server.port", 2020)?;
+
+	settings.merge(config::Environment::with_prefix("UPTOWN"))?;
+
+	settings.merge(config::File::with_name("config"))?;
+
+	let data = uptown::parser::pl94_171::Dataset::load(
+		"./in2010.pl.prd.packinglist.txt",
+		"./ingeo2010.pl",
+		vec!["./in000012010.pl", "./in000022010.pl"],
+	);
+
+	let socket = {
+		use core::convert::TryInto;
+
+		let host: IpAddr = settings
+			.get_str("server.host")?
+			.parse()
+			.map_err(|_| uptown::error::Error::InvalidServerHost)?;
+		let port: u16 = settings
+			.get_int("server.port")?
+			.try_into()
+			.map_err(|_| uptown::error::Error::InvalidServerPort)?;
+
+		SocketAddr::new(host, port)
+	};
+
+	warp::serve(routes()).run(socket).await;
+
+	Ok(())
 }
 
 async fn handle_rejection(

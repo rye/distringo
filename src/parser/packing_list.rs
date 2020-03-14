@@ -57,6 +57,8 @@ impl PackingList {
 	pub fn schema(&self) -> crate::schema::CensusDataSchema {
 		self.schema
 	}
+
+	// pub fn locate_table(&self, table_id: &str) -> Vec<()
 }
 
 use lazy_static::lazy_static;

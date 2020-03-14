@@ -5,7 +5,11 @@ use std::io;
 #[non_exhaustive]
 pub enum Error {
 	Io(io::Error),
+	Config(config::ConfigError),
 	ParseInt(num::ParseIntError),
+
+	InvalidServerHost,
+	InvalidServerPort,
 
 	ParsePackingListLine,
 	ParsePackingListFilename,
@@ -16,6 +20,12 @@ pub type Result<T> = result::Result<T, Error>;
 impl From<io::Error> for Error {
 	fn from(e: io::Error) -> Error {
 		Self::Io(e)
+	}
+}
+
+impl From<config::ConfigError> for Error {
+	fn from(e: config::ConfigError) -> Error {
+		Self::Config(e)
 	}
 }
 
