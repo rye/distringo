@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256px" height="256px" viewBox="0 0 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>Untitled</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#0077FF" stop-opacity="0.34650896" offset="0%"></stop>
+            <stop stop-color="#000000" stop-opacity="0.364592439" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="256" height="256"></rect>
+        <filter x="-17.9%" y="-10.7%" width="131.7%" height="121.5%" filterUnits="objectBoundingBox" id="filter-3">
+            <feOffset dx="0" dy="2" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="3.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1" result="shadowMatrixOuter1"></feColorMatrix>
+            <feMerge>
+                <feMergeNode in="shadowMatrixOuter1"></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Rectangle">
+            <use fill="#D8D8D8" xlink:href="#path-2"></use>
+            <use fill="url(#linearGradient-1)" xlink:href="#path-2"></use>
+        </g>
+        <g id="Group" filter="url(#filter-3)" transform="translate(64.000000, 52.000000)" fill="#000000">
+            <text id="u" font-family="Overpass-Bold, Overpass" font-size="128" font-weight="bold">
+                <tspan x="2.80631933" y="126.12605">u</tspan>
+            </text>
+            <text id="T" font-family="Overpass-Bold, Overpass" font-size="128" font-weight="bold">
+                <tspan x="46.3162353" y="126.12605">T</tspan>
+            </text>
+            <path id="Path" d="M19.34,39.5658745 L22.8263021,45.763745 L43.0763021,81.763745 L36.1036979,85.6858349 L23.34,62.994 L23.34,63.9579832 L15.34,63.9579832 L15.34,62.994 L2.57630215,85.6858349 L-4.39630215,81.763745 L15.8536979,45.763745 L19.34,39.5658745 Z" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>
