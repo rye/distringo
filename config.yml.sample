@@ -6,11 +6,11 @@ datasets:
   in2010-pl94_171:
     packing_list: in2010.pl.prd.packinglist.txt
     tables:
-    - p1
-    - p2
-    - p3
-    - p4
-    - h1
+    - p1: { schema: "schemas/2010/pl94_171/p1.yml" }
+    - p2: { schema: "schemas/2010/pl94_171/p2.yml" }
+    - p3: { schema: "schemas/2010/pl94_171/p3.yml" }
+    - p4: { schema: "schemas/2010/pl94_171/p4.yml" }
+    - h1: { schema: "schemas/2010/pl94_171/h1.yml" }
 
 shapefiles:
   tippecanoe_tabblock_2010:
