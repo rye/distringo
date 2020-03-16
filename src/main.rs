@@ -1,35 +1,44 @@
-use hyper::StatusCode;
+use config::Config;
+use hyper::{Response, StatusCode};
 use log::warn;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use uptown::parser::pl94_171::Dataset;
+
+use std::net::IpAddr;
+use std::net::SocketAddr;
+
 use warp::{Filter, Rejection, Reply};
 
-#[derive(Debug)]
-enum Error {
-	Io(std::io::Error),
-	ParseInt(std::num::ParseIntError),
+fn api() -> impl warp::Filter<Extract = impl Reply, Error = Rejection> + Clone {
+	// GET /api/data/tabblock/<year>/<fips_state>/<fips_county>
+	let tabblock = warp::get()
+		.and(warp::path!("tabblock" / u16 / u16 / u16))
+		.map(|year, fips_state, fips_county| {
+			Response::builder()
+				.body(format!(
+					"You requested data for year {} for {}{}",
+					year, fips_state, fips_county
+				))
+				.unwrap()
+		});
+
+	// GET /api/data/pl94_171/<year>/<stusab>
+	let pl94_171 = warp::get()
+		.and(warp::path!("pl94_171" / u16 / String))
+		.map(|year, stusab| {
+			Response::builder()
+				.body(format!(
+					"You requested PL94-171 data for year {} in state {}",
+					year, stusab
+				))
+				.unwrap()
+		});
+
+	warp::path!("api" / "data").and(tabblock.or(pl94_171))
 }
 
-type Result<T> = core::result::Result<T, Error>;
-
-impl From<std::io::Error> for Error {
-	fn from(e: std::io::Error) -> Error {
-		Self::Io(e)
-	}
-}
-
-impl From<std::num::ParseIntError> for Error {
-	fn from(e: std::num::ParseIntError) -> Error {
-		Self::ParseInt(e)
-	}
-}
-
-#[tokio::main]
-async fn main() {
-	if std::env::var("RUST_LOG").ok().is_none() {
-		std::env::set_var("RUST_LOG", "info");
-	}
-
-	pretty_env_logger::init();
-
+fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
 	// GET / => (fs ./public/index.html)
 	let slash = warp::get()
 		.and(warp::path::end())
@@ -41,12 +50,91 @@ async fn main() {
 		.and(warp::path::end());
 
 	// Compose the routes together.
-	let routes = warp::any()
-		.and(warp::get().and(slash.or(public_files)))
+	warp::any()
+		.and(warp::get().and(slash.or(public_files)).or(api()))
 		.with(warp::log("uptown"))
-		.recover(handle_rejection);
+		.recover(handle_rejection)
+}
 
-	warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+#[tokio::main]
+async fn main() -> uptown::error::Result<()> {
+	if std::env::var("RUST_LOG").ok().is_none() {
+		std::env::set_var("RUST_LOG", "info");
+	}
+
+	pretty_env_logger::init();
+
+	let mut settings = Config::default();
+
+	settings.set_default("server.host", "::")?;
+	settings.set_default("server.port", 2020)?;
+
+	settings.merge(config::Environment::with_prefix("UPTOWN"))?;
+
+	settings.merge(config::File::with_name("config"))?;
+
+	let datasets: HashMap<String, Box<Dataset>> = {
+		let datasets = settings.get_table("datasets")?;
+
+		datasets
+			.iter()
+			.map(
+				|(name, value)| -> uptown::error::Result<(String, Box<Dataset>)> {
+					let value: HashMap<String, config::Value> = value.clone().into_table()?;
+
+					let packing_list: PathBuf = value
+						.get("packing_list")
+						.ok_or(uptown::error::Error::MissingPackingList)?
+						.clone()
+						.into_str()?
+						.into();
+
+					let tables: Vec<String> = value
+						.get("tables")
+						.map(
+							|tables: &config::Value| -> uptown::error::Result<Vec<String>> {
+								let tables: Vec<String> = tables
+									.clone()
+									.into_array()?
+									.iter()
+									.map(|v: &config::Value| -> uptown::error::Result<String> {
+										Ok(v.clone().into_str()?)
+									})
+									.filter_map(Result::ok)
+									.collect();
+
+								Ok(tables)
+							},
+						)
+						.unwrap_or_else(|| Ok(Vec::new()))?;
+
+					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list, &tables)?);
+
+					Ok((name.to_string(), dataset))
+				},
+			)
+			.filter_map(Result::ok)
+			.collect()
+	};
+
+	let socket = {
+		use core::convert::TryInto;
+
+		let host: IpAddr = settings
+			.get_str("server.host")?
+			.parse()
+			.map_err(|_| uptown::error::Error::InvalidServerHost)?;
+		let port: u16 = settings
+			.get_int("server.port")?
+			.try_into()
+			.map_err(|_| uptown::error::Error::InvalidServerPort)?;
+
+		SocketAddr::new(host, port)
+	};
+
+	warp::serve(routes()).run(socket).await;
+
+	Ok(())
 }
 
 async fn handle_rejection(
