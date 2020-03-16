@@ -10,32 +10,34 @@ use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn api() -> impl warp::Filter<Extract = impl Reply, Error = Rejection> + Clone {
-	// GET /api/data/tabblock/<year>/<fips_state>/<fips_county>
-	let tabblock = warp::get()
-		.and(warp::path!("tabblock" / u16 / u16 / u16))
-		.map(|year, fips_state, fips_county| {
+fn shapefiles() -> warp::filters::BoxedFilter<(impl Reply,)> {
+	// GET .../shapefile/<id>
+	warp::get()
+		.and(warp::path!("shapefile" / String))
+		.map(|shapefile_name| {
 			Response::builder()
-				.body(format!(
-					"You requested data for year {} for {}{}",
-					year, fips_state, fips_county
-				))
+				.body(format!("shp {}", shapefile_name))
 				.unwrap()
-		});
+		})
+		.boxed()
+}
 
-	// GET /api/data/pl94_171/<year>/<stusab>
-	let pl94_171 = warp::get()
-		.and(warp::path!("pl94_171" / u16 / String))
-		.map(|year, stusab| {
+fn datasets() -> warp::filters::BoxedFilter<(impl Reply,)> {
+	// GET .../dataset/<id>
+	warp::get()
+		.and(warp::path!("dataset" / String))
+		.map(|dataset_name| {
 			Response::builder()
-				.body(format!(
-					"You requested PL94-171 data for year {} in state {}",
-					year, stusab
-				))
+				.body(format!("ds {}", dataset_name))
 				.unwrap()
-		});
+		})
+		.boxed()
+}
 
-	warp::path!("api" / "data").and(tabblock.or(pl94_171))
+fn api() -> warp::filters::BoxedFilter<(impl Reply,)> {
+	warp::path!("api" / ..)
+		.and(shapefiles().or(datasets()))
+		.boxed()
 }
 
 fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
