@@ -91,17 +91,38 @@ async fn main() -> uptown::error::Result<()> {
 						.into_str()?
 						.into();
 
-					let tables: Vec<String> = value
+					let tables_and_schemas: Vec<(String, String)> = value
 						.get("tables")
 						.map(
-							|tables: &config::Value| -> uptown::error::Result<Vec<String>> {
-								let tables: Vec<String> = tables
+							|tables: &config::Value| -> uptown::error::Result<Vec<(String, String)>> {
+								let tables: Vec<(String, String)> = tables
 									.clone()
 									.into_array()?
 									.iter()
-									.map(|v: &config::Value| -> uptown::error::Result<String> {
-										Ok(v.clone().into_str()?)
-									})
+									.map(
+										|v: &config::Value| -> uptown::error::Result<(String, String)> {
+											let v: config::Value = v.clone();
+
+											let definition: HashMap<String, config::Value> = v.into_table()?;
+
+											debug_assert!(definition.len() == 1);
+
+											let table_name: String = definition.keys().next().unwrap().to_string();
+											let schema_filename: String = definition
+												.values()
+												.next()
+												.unwrap()
+												.clone()
+												.into_table()?
+												.get("schema")
+												.expect("missing schema")
+												.clone()
+												.into_str()?
+												.to_string();
+
+											Ok((table_name, schema_filename))
+										},
+									)
 									.filter_map(Result::ok)
 									.collect();
 
@@ -109,6 +130,12 @@ async fn main() -> uptown::error::Result<()> {
 							},
 						)
 						.unwrap_or_else(|| Ok(Vec::new()))?;
+
+					let tables: Vec<String> = tables_and_schemas
+						.iter()
+						.map(|(table, _)| table)
+						.cloned()
+						.collect();
 
 					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list, &tables)?);
 
