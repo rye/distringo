@@ -13,3 +13,6 @@
 *.pdf
 *.png
 *.shp
+
+# Indexes
+*.idx

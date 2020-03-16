@@ -137,7 +137,7 @@ async fn main() -> uptown::error::Result<()> {
 						.cloned()
 						.collect();
 
-					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list, &tables)?);
+					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list)?);
 
 					Ok((name.to_string(), dataset))
 				},

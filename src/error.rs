@@ -15,6 +15,8 @@ pub enum Error {
 	ParsePackingListLine,
 	ParsePackingListFilename,
 
+	InvalidLogicalRecordNumber,
+
 	MissingPackingList,
 }
 

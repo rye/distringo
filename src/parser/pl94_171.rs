@@ -1,166 +1,97 @@
 use crate::error::Result;
-use crate::parser::common::{LogicalRecord, LogicalRecordNumber};
 use crate::parser::packing_list::PackingList;
-use crate::parser::packing_list::SegmentationInformation;
-use crate::parser::packing_list::SegmentedFileIndex;
 use crate::schema::CensusData;
-use core::ops::Range;
-use csv::StringRecord;
-use std::collections::BTreeMap;
+
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub struct Dataset {
 	schema: CensusData,
-	data: HashMap<LogicalRecordNumber, LogicalRecord>,
+	packing_list: PackingList,
+	readers: HashMap<PathBuf, csv::Reader<std::fs::File>>,
+	indexes: HashMap<PathBuf, csv_index::RandomAccessSimple<std::fs::File>>,
 }
 
 impl Dataset {
-	pub fn load<P: AsRef<Path>>(packing_list_file: P, tables_to_load: &[String]) -> Result<Self> {
+	pub fn get_logical_record(&mut self, path: &PathBuf, logrecno: u64) -> Result<csv::StringRecord> {
+		let idx: &mut csv_index::RandomAccessSimple<std::fs::File> = self
+			.indexes
+			.get_mut(path)
+			.expect("couldn't find index for file");
+		let rdr: &mut csv::Reader<std::fs::File> = self
+			.readers
+			.get_mut(path)
+			.expect("couldn't find reader for file");
+
+		if let Ok(pos) = idx.get(logrecno - 1) {
+			rdr.seek(pos)?;
+			if let Some(record) = rdr.records().next() {
+				Ok(record?)
+			} else {
+				Err(crate::error::Error::InvalidLogicalRecordNumber)
+			}
+		} else {
+			Err(crate::error::Error::InvalidLogicalRecordNumber)
+		}
+	}
+
+	pub fn load<P: AsRef<Path>>(packing_list_file: P) -> Result<Self> {
 		let packing_list: PackingList = PackingList::from_file(&packing_list_file)?;
 
 		let schema: CensusData = packing_list.schema();
 
-		let mut data = HashMap::new();
+		let mut readers: HashMap<PathBuf, csv::Reader<std::fs::File>> = HashMap::new();
+		let mut indexes: HashMap<PathBuf, csv_index::RandomAccessSimple<std::fs::File>> =
+			HashMap::new();
 
-		{
-			use std::io::BufRead;
+		for file in packing_list.files() {
+			if file.is_tabular() {
+				let dataset_file = file.filename();
 
-			let header_file = packing_list.header_file();
-			let file: std::fs::File = std::fs::File::open(&header_file)?;
-			let reader = std::io::BufReader::new(file);
+				let index = {
+					let mut path: PathBuf = dataset_file.clone();
 
-			for line in reader.lines() {
-				let line: String = line?.to_string();
+					let mut extension: std::ffi::OsString =
+						path.extension().unwrap_or(std::ffi::OsStr::new("")).into();
+					extension.push(".idx");
 
-				let number: usize = line
-					[crate::parser::fields::census2010::pl94_171::geographical_header::LOGRECNO]
-					.parse()?;
+					path.set_extension(extension);
 
-				let record: LogicalRecord = LogicalRecord {
-					number,
-					header: line,
-					records: HashMap::new(),
+					path
 				};
 
-				data.insert(number, record);
-			}
-		}
+				let mut reader = csv::Reader::from_reader(std::fs::File::open(dataset_file)?);
 
-		let tables: &Vec<(String, SegmentationInformation)> = packing_list.tables();
-		let tabular_files: BTreeMap<SegmentedFileIndex, PathBuf> = packing_list.tabular_files();
-		let mut table_locations: BTreeMap<String, Vec<(SegmentedFileIndex, Range<usize>)>> =
-			BTreeMap::new();
-
-		{
-			let mut current_columns: HashMap<SegmentedFileIndex, usize> = tabular_files
-				.iter()
-				.map(|(fidx, _path)| -> (SegmentedFileIndex, usize) { (*fidx, 5) })
-				.collect();
-
-			for (table, segmentation_information) in tables {
-				log::debug!(
-					"Segmentation information for {}: {:?}",
-					table,
-					segmentation_information
-				);
-
-				let locations: Vec<(SegmentedFileIndex, Range<usize>)> = segmentation_information
-					.file_width
-					.iter()
-					.map(|(sidx, width)| -> (SegmentedFileIndex, Range<usize>) {
-						let start: usize = *current_columns
-							.get(sidx)
-							.expect("failed to find segmented file");
-						let end: usize = start + width;
-						let range = start..end;
-
-						current_columns.insert(*sidx, end);
-
-						(*sidx, range)
-					})
-					.collect();
-
-				table_locations.insert(table.to_string(), locations.clone());
-
-				log::info!("Table locations for {}: {:?}", table, locations);
-			}
-		}
-
-		{
-			let mut raw_data: HashMap<SegmentedFileIndex, HashMap<LogicalRecordNumber, Vec<String>>> =
-				HashMap::new();
-
-			let paths_to_load: HashMap<SegmentedFileIndex, PathBuf> = tables_to_load
-				.iter()
-				.flat_map(|table| -> Vec<SegmentedFileIndex> {
-					table_locations
-						.get(table)
-						.expect("couldn't locate table")
-						.iter()
-						.map(|segs| segs.0)
-						.collect()
-				})
-				.map(|sidx| -> (SegmentedFileIndex, PathBuf) {
-					(
-						sidx,
-						tabular_files.get(&sidx).expect("invalid sidx").clone(),
-					)
-				})
-				.collect();
-
-			for (sidx, path) in paths_to_load {
-				log::debug!("Loading file {:?}", path);
-
-				let file: std::fs::File = std::fs::File::open(path)?;
-				let mut reader = csv::ReaderBuilder::new().from_reader(file);
-
-				let records: HashMap<LogicalRecordNumber, Vec<String>> = reader
-					.records()
-					.flat_map(|record| -> Result<(LogicalRecordNumber, Vec<String>)> {
-						let record: StringRecord = record?;
-						let number: LogicalRecordNumber = record[4].parse()?;
-						let record: Vec<String> = record.into_iter().map(ToString::to_string).collect();
-
-						Ok((number, record))
-					})
-					.collect();
-
-				raw_data.insert(sidx, records);
-			}
-
-			log::debug!("Cross-associating records");
-
-			for table in tables_to_load {
-				log::debug!("Loading table {}", table);
-				if let Some(locations) = table_locations.get(table) {
-					log::debug!("{}: Loading from locations {:?}", table, locations);
-
-					for (sidx, location) in locations {
-						log::debug!("{}: Loading from file {} at {:?}", table, sidx, location);
-
-						let file: &HashMap<LogicalRecordNumber, Vec<String>> =
-							raw_data.get(sidx).expect("missing raw data");
-
-						for (logrecno, fields) in file.iter() {
-							let location: Range<usize> = location.clone();
-							let (logrecno, fields): (&LogicalRecordNumber, &Vec<String>) = (logrecno, fields);
-							let record: &mut LogicalRecord = data
-								.get_mut(logrecno)
-								.expect("cannot add data to missing logical record");
-							let tabular_data = &fields[location];
-
-							record
-								.records
-								.insert(table.to_string(), tabular_data.to_vec());
-						}
-					}
+				if let Ok(file) = std::fs::File::open(index.clone()) {
+					log::debug!("{:?}: Already have a valid index", dataset_file);
+					indexes.insert(
+						dataset_file.clone(),
+						csv_index::RandomAccessSimple::open(file)?,
+					);
 				} else {
-					log::warn!("{}: No locations!", table);
+					log::debug!("Indexing {:?} into {:?}", dataset_file, index);
+
+					{
+						let output = std::fs::File::create(index.clone())?;
+						csv_index::RandomAccessSimple::create(&mut reader, output)?;
+					}
+
+					let file = std::fs::File::open(index.clone())?;
+					indexes.insert(
+						dataset_file.clone(),
+						csv_index::RandomAccessSimple::open(file)?,
+					);
 				}
+
+				readers.insert(dataset_file.clone(), reader);
 			}
 		}
 
-		Ok(Dataset { schema, data })
+		Ok(Dataset {
+			schema,
+			packing_list,
+			indexes,
+			readers,
+		})
 	}
 }

@@ -32,14 +32,14 @@ pub(crate) struct DatasetFile {
 }
 
 impl DatasetFile {
-	fn is_tabular(&self) -> bool {
+	pub(crate) fn is_tabular(&self) -> bool {
 		match self.ty {
 			FileType::TabularFile(_) => true,
 			_ => false,
 		}
 	}
 
-	fn is_header(&self) -> bool {
+	pub(crate) fn is_header(&self) -> bool {
 		match self.ty {
 			FileType::HeaderFile(_) => true,
 			_ => false,
@@ -51,6 +51,10 @@ impl DatasetFile {
 			FileType::TabularFile(n) => Some((n, self.filename.clone())),
 			_ => None,
 		}
+	}
+
+	pub(crate) fn filename(&self) -> &PathBuf {
+		&self.filename
 	}
 
 	fn schema(&self) -> crate::schema::CensusData {
