@@ -4,6 +4,10 @@
 # The configuration
 /config.yml
 
+# Ignore the data directory, except for the .keep file
+/data/*
+!/data/.keep
+
 # Data that we've generated and acquired from places
 *.geojson
 *.pl
