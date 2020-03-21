@@ -8,16 +8,6 @@ pub enum Error {
 	Csv(csv::Error),
 	Config(config::ConfigError),
 	ParseInt(num::ParseIntError),
-
-	InvalidServerHost,
-	InvalidServerPort,
-
-	ParsePackingListLine,
-	ParsePackingListFilename,
-
-	InvalidLogicalRecordNumber,
-
-	MissingPackingList,
 }
 
 pub type Result<T> = result::Result<T, Error>;
