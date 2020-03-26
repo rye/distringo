@@ -8,7 +8,24 @@ pub enum Error {
 	Csv(csv::Error),
 	Config(config::ConfigError),
 	ParseInt(num::ParseIntError),
+
+	Parse(ParseError),
+
+	InvalidServerHost,
+	InvalidServerPort,
 }
+
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum ParseError {
+	// PackingList(PackingListParseError),
+}
+
+// #[derive(Debug)]
+// #[non_exhaustive]
+// pub enum PackingListParseError {
+// 	Malformed
+// }
 
 pub type Result<T> = result::Result<T, Error>;
 

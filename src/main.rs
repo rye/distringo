@@ -1,5 +1,5 @@
 use config::Config;
-use hyper::{Response, StatusCode};
+use hyper::StatusCode;
 use log::warn;
 
 use std::net::IpAddr;
@@ -7,37 +7,7 @@ use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn shapefiles() -> warp::filters::BoxedFilter<(impl Reply,)> {
-	// GET .../shapefile/<id>
-	warp::get()
-		.and(warp::path!("shapefile" / String))
-		.map(|shapefile_name| {
-			Response::builder()
-				.body(format!("shp {}", shapefile_name))
-				.unwrap()
-		})
-		.boxed()
-}
-
-fn datasets() -> warp::filters::BoxedFilter<(impl Reply,)> {
-	// GET .../dataset/<id>
-	warp::get()
-		.and(warp::path!("dataset" / String))
-		.map(|dataset_name| {
-			Response::builder()
-				.body(format!("ds {}", dataset_name))
-				.unwrap()
-		})
-		.boxed()
-}
-
-fn api() -> warp::filters::BoxedFilter<(impl Reply,)> {
-	warp::path!("api" / ..)
-		.and(shapefiles().or(datasets()))
-		.boxed()
-}
-
-fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
+fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
 	// GET / => (fs ./public/index.html)
 	let slash = warp::get()
 		.and(warp::path::end())
@@ -50,18 +20,18 @@ fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
 
 	// Compose the routes together.
 	warp::any()
-		.and(warp::get().and(slash.or(public_files)).or(api()))
+		.and(warp::get().and(slash.or(public_files)))
 		.with(warp::log("uptown"))
 		.recover(handle_rejection)
 }
 
 #[tokio::main]
 async fn main() -> uptown::error::Result<()> {
-	if std::env::var("RUST_LOG").ok().is_none() {
-		std::env::set_var("RUST_LOG", "info");
+	if std::env::var("UPTOWN_LOG").ok().is_none() {
+		std::env::set_var("UPTOWN_LOG", "info");
 	}
 
-	pretty_env_logger::init();
+	pretty_env_logger::init_custom_env("UPTOWN_LOG");
 
 	let mut settings = Config::default();
 
