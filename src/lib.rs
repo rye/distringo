@@ -14,6 +14,8 @@ pub trait Dataset<LogicalRecord> {
 }
 
 pub mod census2010 {
+	use serde::{Deserialize, Serialize};
+
 	pub mod pl94_171 {
 		use serde::{Deserialize, Serialize};
 
@@ -25,12 +27,12 @@ pub mod census2010 {
 			P4,
 			H1,
 		}
+	}
 
-		#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
-		pub enum FileType {
-			Tabular(usize),
-			GeographicalHeader,
-		}
+	#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+	pub enum FileType {
+		Tabular(usize),
+		GeographicalHeader,
 	}
 }
 
@@ -43,7 +45,7 @@ pub(crate) enum Schema {
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub(crate) enum FileType {
-	Census2010Pl94_171(census2010::pl94_171::FileType),
+	Census2010Pl94_171(census2010::FileType),
 }
 
 #[cfg(test)]
@@ -276,10 +278,10 @@ impl IndexedPackingListDataset {
 				// Parse the File Type and attempt to get close to the right spot
 				let file_type: FileType = match (schema, ident.as_str()) {
 					(Schema::Census2010Pl94_171(None), "geo") => {
-						FileType::Census2010Pl94_171(census2010::pl94_171::FileType::GeographicalHeader)
+						FileType::Census2010Pl94_171(census2010::FileType::GeographicalHeader)
 					}
 					(Schema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(
-						census2010::pl94_171::FileType::Tabular(maybe_numeric.parse::<usize>().unwrap()),
+						census2010::FileType::Tabular(maybe_numeric.parse::<usize>().unwrap()),
 					),
 					_ => unimplemented!(),
 				};
