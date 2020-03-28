@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use std::sync::Mutex;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::Mutex;
 
 pub mod error;
 
@@ -13,7 +13,11 @@ pub type LogicalRecordNumber = u64;
 /// A trait containing behavior expected for datasets
 pub trait Dataset<LogicalRecord> {
 	/// Retrieve the logical record with number `number`
-	fn get_logical_record(&self, number: LogicalRecordNumber, schemas: Vec<crate::Schema>) -> Result<LogicalRecord>;
+	fn get_logical_record(
+		&self,
+		number: LogicalRecordNumber,
+		schemas: Vec<crate::Schema>,
+	) -> Result<LogicalRecord>;
 }
 
 pub mod census2010 {
@@ -85,7 +89,8 @@ pub struct IndexedPackingListDataset {
 	files: HashMap<FileType, std::fs::File>,
 }
 
-pub(crate) type LogicalRecordIndex = HashMap<FileType, Mutex<csv_index::RandomAccessSimple<std::io::Cursor<Vec<u8>>>>>;
+pub(crate) type LogicalRecordIndex =
+	HashMap<FileType, Mutex<csv_index::RandomAccessSimple<std::io::Cursor<Vec<u8>>>>>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TableSegmentSpecifier {
@@ -110,7 +115,14 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 		requested_schemas: Vec<Schema>,
 	) -> Result<csv::StringRecord> {
 		let requested_schemas_set: HashSet<Schema> = requested_schemas.iter().copied().collect();
-		let available_schemas: HashSet<Schema> = self.tables.keys().copied().collect::<HashSet<Schema>>().intersection(&requested_schemas_set).copied().collect();
+		let available_schemas: HashSet<Schema> = self
+			.tables
+			.keys()
+			.copied()
+			.collect::<HashSet<Schema>>()
+			.intersection(&requested_schemas_set)
+			.copied()
+			.collect();
 
 		assert_eq!(available_schemas, requested_schemas_set);
 
@@ -157,7 +169,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 				.for_each(|mut table_part: Vec<String>| record.append(&mut table_part));
 
 				Ok(csv::StringRecord::from(record))
-			},
+			}
 			None => unimplemented!(),
 		}
 	}
@@ -461,12 +473,16 @@ impl IndexedPackingListDataset {
 
 		log::debug!("Indexing tabular files...");
 
-		let tabular_files: HashMap<&FileType, &std::fs::File> = self.files.iter().filter(|(fty, _)| -> bool {
-			match fty {
-				FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(_)) => true,
-				_ => false,
-			}
-		}).collect();
+		let tabular_files: HashMap<&FileType, &std::fs::File> = self
+			.files
+			.iter()
+			.filter(|(fty, _)| -> bool {
+				match fty {
+					FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(_)) => true,
+					_ => false,
+				}
+			})
+			.collect();
 
 		for (fty, file) in tabular_files {
 			log::debug!("Indexing file with FileType {:?}", fty);
