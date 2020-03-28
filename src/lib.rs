@@ -32,7 +32,7 @@ pub mod census2010 {
 		#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 		pub enum FileType {
 			Tabular(usize),
-			GeographicalHeader
+			GeographicalHeader,
 		}
 	}
 }
@@ -131,7 +131,7 @@ impl IndexedPackingListDataset {
 		}
 	}
 
-	pub fn packing_list<P: core::fmt::Display + AsRef<Path>>(mut self, path: P) -> Self {
+	pub fn unpack<P: core::fmt::Display + AsRef<Path>>(mut self, path: P) -> Self {
 		assert!(self.tables.is_empty());
 		assert!(self.files.is_empty());
 
@@ -250,7 +250,10 @@ impl IndexedPackingListDataset {
 			.flatten()
 			.collect();
 
-		log::debug!("{} lines containing data segmentation information", data_segmentation_lines.len());
+		log::debug!(
+			"{} lines containing data segmentation information",
+			data_segmentation_lines.len()
+		);
 
 		let file_information_lines: Vec<&Line> = sections
 			.iter()
@@ -263,7 +266,10 @@ impl IndexedPackingListDataset {
 			.flatten()
 			.collect();
 
-		log::debug!("{} lines containing file information", file_information_lines.len());
+		log::debug!(
+			"{} lines containing file information",
+			file_information_lines.len()
+		);
 
 		// First, load up the file information as we want it
 		for line in file_information_lines {
@@ -272,8 +278,12 @@ impl IndexedPackingListDataset {
 
 				// Parse the File Type and attempt to get close to the right spot
 				let file_type: FileType = match (schema, ident.as_str()) {
-					(Schema::Census2010Pl94_171(None), "geo") => FileType::Census2010Pl94_171(census2010::pl94_171::FileType::GeographicalHeader),
-					(Schema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(census2010::pl94_171::FileType::Tabular(maybe_numeric.parse::<usize>().unwrap())),
+					(Schema::Census2010Pl94_171(None), "geo") => {
+						FileType::Census2010Pl94_171(census2010::pl94_171::FileType::GeographicalHeader)
+					}
+					(Schema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(
+						census2010::pl94_171::FileType::Tabular(maybe_numeric.parse::<usize>().unwrap()),
+					),
 					_ => unimplemented!(),
 				};
 
@@ -290,7 +300,10 @@ impl IndexedPackingListDataset {
 					self.schema = Some(dataset_schema);
 				}
 
-				let parent_directory = path.as_ref().parent().expect("packing list path must be a file");
+				let parent_directory = path
+					.as_ref()
+					.parent()
+					.expect("packing list path must be a file");
 				let mut full_file_name = PathBuf::new();
 				full_file_name.push(parent_directory);
 				full_file_name.push(file_name);
@@ -298,26 +311,40 @@ impl IndexedPackingListDataset {
 
 				log::trace!(" -> file_name = {:?}", file_name);
 
-				let file = std::fs::File::open(&file_name).expect(&format!("couldn't open file {:?}", file_name));
+				let file =
+					std::fs::File::open(&file_name).expect(&format!("couldn't open file {:?}", file_name));
 
 				self.files.insert(file_type, file);
 			}
 		}
 
 		// Next, set up the references for data segmentation information
-		let mut current_column_numbers: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+		let mut current_column_numbers: std::collections::HashMap<usize, usize> =
+			std::collections::HashMap::new();
 
 		for line in data_segmentation_lines {
 			if let Line::DataSegmentationInformation(table_name, table_location) = line {
 				log::trace!("Processing Data Segmentation line: {:?}", line);
 
 				let schema = match (self.schema, table_name.as_str()) {
-					(Some(Schema::Census2010Pl94_171(None)), "p1") => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P1)),
-					(Some(Schema::Census2010Pl94_171(None)), "p2") => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P2)),
-					(Some(Schema::Census2010Pl94_171(None)), "p3") => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P3)),
-					(Some(Schema::Census2010Pl94_171(None)), "p4") => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P4)),
-					(Some(Schema::Census2010Pl94_171(None)), "h1") => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::H1)),
-					(Some(Schema::Census2010Pl94_171(Some(_))), _) => panic!("schema contains table information"),
+					(Some(Schema::Census2010Pl94_171(None)), "p1") => {
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P1))
+					}
+					(Some(Schema::Census2010Pl94_171(None)), "p2") => {
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P2))
+					}
+					(Some(Schema::Census2010Pl94_171(None)), "p3") => {
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P3))
+					}
+					(Some(Schema::Census2010Pl94_171(None)), "p4") => {
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P4))
+					}
+					(Some(Schema::Census2010Pl94_171(None)), "h1") => {
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::H1))
+					}
+					(Some(Schema::Census2010Pl94_171(Some(_))), _) => {
+						panic!("schema contains table information")
+					}
 					(Some(Schema::Census2010Pl94_171(None)), table) => panic!("unrecognized table {}", table),
 					(None, _) => panic!("schema unknown"),
 				};
@@ -334,16 +361,26 @@ impl IndexedPackingListDataset {
 					}
 
 					let current_column_number: usize = {
-						*current_column_numbers.get(&file_number).expect("should have a column for current file")
+						*current_column_numbers
+							.get(&file_number)
+							.expect("should have a column for current file")
 					};
 
-					log::debug!("Current column number for {:?}: {:?}", schema, current_column_number);
+					log::debug!(
+						"Current column number for {:?}: {:?}",
+						schema,
+						current_column_number
+					);
 
 					let width: usize = table_segment_spec.columns;
 
 					let new_column_number = current_column_number + width;
 
-					log::debug!("New column number for {:?}: {:?}", schema, new_column_number);
+					log::debug!(
+						"New column number for {:?}: {:?}",
+						schema,
+						new_column_number
+					);
 
 					current_column_numbers.insert(file_number, new_column_number);
 
