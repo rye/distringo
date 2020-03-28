@@ -41,7 +41,7 @@ pub mod census2010 {
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub(crate) enum Schema {
+pub enum Schema {
 	Census2010Pl94_171(Option<census2010::pl94_171::Table>),
 }
 
@@ -83,7 +83,7 @@ pub struct IndexedPackingListDataset {
 	files: HashMap<FileType, std::fs::File>,
 }
 
-pub struct LogicalRecordIndex {}
+pub(crate) type LogicalRecordIndex = HashMap<FileType, Mutex<csv_index::RandomAccessSimple<std::io::Cursor<Vec<u8>>>>>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TableSegmentSpecifier {
@@ -91,7 +91,7 @@ pub struct TableSegmentSpecifier {
 	columns: usize,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TableSegmentLocation {
 	file: usize,
 	range: core::ops::Range<usize>,
@@ -133,7 +133,7 @@ impl IndexedPackingListDataset {
 		}
 	}
 
-	pub fn unpack<P: core::fmt::Display + AsRef<Path>>(mut self, path: P) -> Self {
+	pub fn unpack<P: core::fmt::Display + AsRef<Path>>(mut self, path: P) -> Result<Self> {
 		assert!(self.tables.is_empty());
 		assert!(self.files.is_empty());
 
@@ -401,13 +401,45 @@ impl IndexedPackingListDataset {
 			}
 		}
 
-		self
+		Ok(self)
 	}
 
-	pub fn index(&self) -> Result<()> {
-		// For each (tabular) file,
-		// - Open the file
-		// - Open an (in-memory) cursor
-		unimplemented!()
+	pub fn index(mut self) -> Result<Self> {
+		assert!(self.index.is_none());
+
+		let mut new_index = LogicalRecordIndex::new();
+
+		log::debug!("Indexing tabular files...");
+
+		let tabular_files: HashMap<&FileType, &std::fs::File> = self.files.iter().filter(|(fty, _)| -> bool {
+			match fty {
+				FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(_)) => true,
+				_ => false,
+			}
+		}).collect();
+
+		for (fty, file) in tabular_files {
+			log::debug!("Indexing file with FileType {:?}", fty);
+
+			let file_reader = BufReader::new(file);
+			let mut file_reader = csv::Reader::from_reader(file_reader);
+			let mut index_data = std::io::Cursor::new(vec![]);
+
+			log::trace!("Creating index...");
+			csv_index::RandomAccessSimple::create(&mut file_reader, &mut index_data)?;
+
+			log::trace!("Opening index...");
+
+			let index = csv_index::RandomAccessSimple::open(index_data)?;
+			let index = Mutex::new(index);
+
+			log::trace!("Adding index to registry...");
+
+			new_index.insert(*fty, index);
+		}
+
+		self.index = Some(new_index);
+
+		Ok(self)
 	}
 }
