@@ -331,19 +331,19 @@ impl IndexedPackingListDataset {
 
 				let schema = match (self.schema, table_name.as_str()) {
 					(Some(Schema::Census2010Pl94_171(None)), "p1") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P1))
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P1))
 					}
 					(Some(Schema::Census2010Pl94_171(None)), "p2") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P2))
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P2))
 					}
 					(Some(Schema::Census2010Pl94_171(None)), "p3") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P3))
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P3))
 					}
 					(Some(Schema::Census2010Pl94_171(None)), "p4") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P4))
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P4))
 					}
 					(Some(Schema::Census2010Pl94_171(None)), "h1") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::H1))
+						Schema::Census2010Pl94_171(Some(census2010::pl94_171::H1))
 					}
 					(Some(Schema::Census2010Pl94_171(Some(_))), _) => {
 						panic!("schema contains table information")
