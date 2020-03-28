@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub mod error;
 
@@ -27,6 +27,8 @@ pub mod census2010 {
 			P4,
 			H1,
 		}
+
+		pub use Table::{H1, P1, P2, P3, P4};
 	}
 
 	#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -34,6 +36,8 @@ pub mod census2010 {
 		Tabular(usize),
 		GeographicalHeader,
 	}
+
+	pub use FileType::{GeographicalHeader, Tabular};
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -76,8 +80,8 @@ pub struct IndexedPackingListDataset {
 	identifier: String,
 	schema: Option<Schema>,
 	index: Option<LogicalRecordIndex>,
-	tables: std::collections::HashMap<Schema, TableLocations>,
-	files: std::collections::HashMap<FileType, std::fs::File>,
+	tables: HashMap<Schema, TableLocations>,
+	files: HashMap<FileType, std::fs::File>,
 }
 
 pub struct LogicalRecordIndex {}
@@ -104,7 +108,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 		logical_record_number: LogicalRecordNumber,
 	) -> crate::error::Result<csv::StringRecord> {
 		match &self.index {
-			Some(idx) => unimplemented!(),
+			Some(index) => unimplemented!(),
 			None => unimplemented!(),
 		}
 	}
@@ -116,8 +120,8 @@ impl Default for IndexedPackingListDataset {
 			identifier: "".to_string(),
 			index: None,
 			schema: None,
-			tables: std::collections::HashMap::new(),
-			files: std::collections::HashMap::new(),
+			tables: HashMap::new(),
+			files: HashMap::new(),
 		}
 	}
 }
@@ -278,10 +282,10 @@ impl IndexedPackingListDataset {
 				// Parse the File Type and attempt to get close to the right spot
 				let file_type: FileType = match (schema, ident.as_str()) {
 					(Schema::Census2010Pl94_171(None), "geo") => {
-						FileType::Census2010Pl94_171(census2010::FileType::GeographicalHeader)
+						FileType::Census2010Pl94_171(census2010::GeographicalHeader)
 					}
 					(Schema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(
-						census2010::FileType::Tabular(maybe_numeric.parse::<usize>().unwrap()),
+						census2010::Tabular(maybe_numeric.parse::<usize>().unwrap()),
 					),
 					_ => unimplemented!(),
 				};
@@ -318,8 +322,7 @@ impl IndexedPackingListDataset {
 		}
 
 		// Next, set up the references for data segmentation information
-		let mut current_column_numbers: std::collections::HashMap<usize, usize> =
-			std::collections::HashMap::new();
+		let mut current_column_numbers: HashMap<usize, usize> = HashMap::new();
 
 		for line in data_segmentation_lines {
 			if let Line::DataSegmentationInformation(table_name, table_location) = line {
