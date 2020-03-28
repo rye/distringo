@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use crate::error::Result;
 
 pub mod error;
 
@@ -10,7 +11,7 @@ pub type LogicalRecordNumber = u32;
 /// A trait containing behavior expected for datasets
 pub trait Dataset<LogicalRecord> {
 	/// Retrieve the logical record with number `number`
-	fn get_logical_record(&self, number: LogicalRecordNumber) -> crate::error::Result<LogicalRecord>;
+	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<LogicalRecord>;
 }
 
 pub mod census2010 {
@@ -106,7 +107,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 	fn get_logical_record(
 		&self,
 		logical_record_number: LogicalRecordNumber,
-	) -> crate::error::Result<csv::StringRecord> {
+	) -> Result<csv::StringRecord> {
 		match &self.index {
 			Some(index) => unimplemented!(),
 			None => unimplemented!(),
@@ -405,7 +406,7 @@ impl IndexedPackingListDataset {
 		self
 	}
 
-	pub fn index(&self) -> crate::error::Result<()> {
+	pub fn index(&self) -> Result<()> {
 		unimplemented!()
 	}
 }
