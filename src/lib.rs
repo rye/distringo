@@ -1,8 +1,8 @@
+use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use crate::error::Result;
 
 pub mod error;
 
@@ -15,8 +15,6 @@ pub trait Dataset<LogicalRecord> {
 }
 
 pub mod census2010 {
-	use serde::{Deserialize, Serialize};
-
 	pub mod pl94_171 {
 		use serde::{Deserialize, Serialize};
 
@@ -30,15 +28,15 @@ pub mod census2010 {
 		}
 
 		pub use Table::{H1, P1, P2, P3, P4};
-	}
 
-	#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
-	pub enum FileType {
-		Tabular(usize),
-		GeographicalHeader,
-	}
+		#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+		pub enum FileType {
+			Tabular(usize),
+			GeographicalHeader,
+		}
 
-	pub use FileType::{GeographicalHeader, Tabular};
+		pub use FileType::{GeographicalHeader, Tabular};
+	}
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -50,7 +48,7 @@ pub(crate) enum Schema {
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub(crate) enum FileType {
-	Census2010Pl94_171(census2010::FileType),
+	Census2010Pl94_171(census2010::pl94_171::FileType),
 }
 
 #[cfg(test)]
@@ -283,10 +281,10 @@ impl IndexedPackingListDataset {
 				// Parse the File Type and attempt to get close to the right spot
 				let file_type: FileType = match (schema, ident.as_str()) {
 					(Schema::Census2010Pl94_171(None), "geo") => {
-						FileType::Census2010Pl94_171(census2010::GeographicalHeader)
+						FileType::Census2010Pl94_171(census2010::pl94_171::GeographicalHeader)
 					}
 					(Schema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(
-						census2010::Tabular(maybe_numeric.parse::<usize>().unwrap()),
+						census2010::pl94_171::Tabular(maybe_numeric.parse::<usize>().unwrap()),
 					),
 					_ => unimplemented!(),
 				};
@@ -407,6 +405,9 @@ impl IndexedPackingListDataset {
 	}
 
 	pub fn index(&self) -> Result<()> {
+		// For each (tabular) file,
+		// - Open the file
+		// - Open an (in-memory) cursor
 		unimplemented!()
 	}
 }
