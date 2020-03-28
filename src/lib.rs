@@ -1,17 +1,19 @@
+use std::sync::Arc;
+use std::sync::Mutex;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 pub mod error;
 
-pub type LogicalRecordNumber = u32;
+pub type LogicalRecordNumber = u64;
 
 /// A trait containing behavior expected for datasets
 pub trait Dataset<LogicalRecord> {
 	/// Retrieve the logical record with number `number`
-	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<LogicalRecord>;
+	fn get_logical_record(&self, number: LogicalRecordNumber, schemas: Vec<crate::Schema>) -> Result<LogicalRecord>;
 }
 
 pub mod census2010 {
@@ -105,9 +107,57 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 	fn get_logical_record(
 		&self,
 		logical_record_number: LogicalRecordNumber,
+		requested_schemas: Vec<Schema>,
 	) -> Result<csv::StringRecord> {
+		let requested_schemas_set: HashSet<Schema> = requested_schemas.iter().copied().collect();
+		let available_schemas: HashSet<Schema> = self.tables.keys().copied().collect::<HashSet<Schema>>().intersection(&requested_schemas_set).copied().collect();
+
+		assert_eq!(available_schemas, requested_schemas_set);
+
+		log::debug!("Requesting {:?}", requested_schemas);
+
+		let ranges = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
+			(*schema, self.tables.get(schema).unwrap().clone())
+		}).map(|(schema, locations)| -> Vec<(FileType, &std::fs::File, core::ops::Range<usize>)> {
+			locations.iter().map(|location: &TableSegmentLocation| -> (usize, core::ops::Range<usize>) {
+				(location.file, location.range.clone())
+			}).map(|(file_number, columns): (usize, core::ops::Range<usize>)| -> (FileType, core::ops::Range<usize>) {
+				(match schema {
+					Schema::Census2010Pl94_171(Some(_)) => FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(file_number)),
+					_ => unimplemented!(),
+				}, columns)
+			})
+			.map(|(fty, columns)| -> (FileType, &std::fs::File, core::ops::Range<usize>) {
+				(fty, self.files.get(&fty).unwrap(), columns)
+			}).collect()
+		})
+		.flatten();
+
 		match &self.index {
-			Some(index) => unimplemented!(),
+			Some(index) => {
+				let mut record: Vec<String> = Vec::new();
+				ranges.map(|(fty, file, cols): (FileType, &std::fs::File, core::ops::Range<usize>)| -> Vec<String> {
+					let mut idx = index.get(&fty).unwrap().lock().unwrap();
+					let br = BufReader::new(file);
+					let mut reader = csv::Reader::from_reader(br);
+
+					let offset = idx.get(logical_record_number - 1_u64).expect(&format!("index is missing {}", logical_record_number - 1_u64));
+					reader.seek(offset).expect("couldn't seek reader");
+
+					let mut rec: csv::StringRecord = csv::StringRecord::new();
+					reader.read_record(&mut rec).unwrap();
+					let rec = rec;
+
+					debug_assert!(rec[4].parse::<u64>().unwrap() == logical_record_number);
+
+					cols.map(|col: usize| -> String {
+						rec[col].to_string()
+					}).collect()
+				})
+				.for_each(|mut table_part: Vec<String>| record.append(&mut table_part));
+
+				Ok(csv::StringRecord::from(record))
+			},
 			None => unimplemented!(),
 		}
 	}
