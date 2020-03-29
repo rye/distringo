@@ -232,6 +232,7 @@ impl IndexedPackingListDataset {
 					.expect("couldn't parse regex");
 			static ref FILE_INFORMATION_RE: regex::Regex = regex::Regex::new("^(?P<filename>(?P<stusab>[a-z]{2})(?P<ident>\\w+)(?P<year>\\d{4})\\.(?P<ds>.+))\\|(?P<date>.+)\\|(?P<size>\\d+)\\|(?P<lines>\\d+)\\|$").expect("couldn't parse regex");
 		}
+
 		#[derive(Clone, Debug, PartialEq)]
 		enum Line {
 			DataSegmentationInformation(TableName, TableLocationSpecifier),
