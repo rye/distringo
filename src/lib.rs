@@ -82,7 +82,7 @@ mod tests {
 ///
 /// Every dataset has a unique, human-identifiable identifier, which is used
 /// internally for reading the data.
-pub struct IndexedPackingListDataset {
+pub struct IndexedDataset {
 	identifier: String,
 	schema: Option<Schema>,
 	index: Option<LogicalRecordIndex>,
@@ -109,7 +109,7 @@ pub type TableName = String;
 pub type TableLocationSpecifier = Vec<TableSegmentSpecifier>;
 pub type TableLocations = Vec<TableSegmentLocation>;
 
-impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
+impl Dataset<csv::StringRecord> for IndexedDataset {
 	fn get_logical_record(
 		&self,
 		logical_record_number: LogicalRecordNumber,
@@ -171,7 +171,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 	}
 }
 
-impl Default for IndexedPackingListDataset {
+impl Default for IndexedDataset {
 	fn default() -> Self {
 		Self {
 			identifier: "".to_string(),
@@ -193,7 +193,7 @@ lazy_static::lazy_static! {
 			.expect("couldn't parse regex");
 }
 
-impl IndexedPackingListDataset {
+impl IndexedDataset {
 	pub fn new<S: Into<String>>(s: S) -> Self {
 		Self {
 			identifier: s.into(),

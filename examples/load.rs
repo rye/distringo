@@ -6,7 +6,7 @@ use distringo::Dataset;
 fn main() -> distringo::error::Result<()> {
 	simple_logger::init_with_level(log::Level::Trace).unwrap();
 
-	let ds = distringo::IndexedPackingListDataset::new("in2010-pl94_171")
+	let ds = distringo::IndexedDataset::new("in2010-pl94_171")
 		.unpack("data/in2010.pl.prd.packinglist.txt")?
 		.index()?;
 
