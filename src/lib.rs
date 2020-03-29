@@ -190,7 +190,7 @@ impl IndexedPackingListDataset {
 	pub fn new<S: Into<String>>(s: S) -> Self {
 		Self {
 			identifier: s.into(),
-			..Default::default()
+			..Self::default()
 		}
 	}
 
