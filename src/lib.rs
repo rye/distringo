@@ -113,18 +113,6 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 		logical_record_number: LogicalRecordNumber,
 		requested_schemas: Vec<Schema>,
 	) -> Result<csv::StringRecord> {
-		let requested_schemas_set: HashSet<Schema> = requested_schemas.iter().copied().collect();
-		let available_schemas: HashSet<Schema> = self
-			.tables
-			.keys()
-			.copied()
-			.collect::<HashSet<Schema>>()
-			.intersection(&requested_schemas_set)
-			.copied()
-			.collect();
-
-		assert_eq!(available_schemas, requested_schemas_set);
-
 		log::debug!("Requesting {:?}", requested_schemas);
 
 		let ranges = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
