@@ -1,6 +1,7 @@
 use crate::error::Result;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -178,6 +179,16 @@ impl Default for IndexedPackingListDataset {
 	}
 }
 
+lazy_static::lazy_static! {
+	static ref TABLE_INFORMATION_RE: Regex =
+		Regex::new(r"^(?P<table>[A-Za-z0-9]+)\|(?P<loc>[\d: ]+)\|$")
+			.expect("couldn't parse regex");
+
+	static ref FILE_INFORMATION_RE: Regex =
+		Regex::new(r"^(?P<filename>(?P<stusab>[a-z]{2})(?P<ident>\w+)(?P<year>\d{4})\.(?P<ds>.+))\|(?P<date>.+)\|(?P<size>\d+)\|(?P<lines>\d+)\|$")
+			.expect("couldn't parse regex");
+}
+
 impl IndexedPackingListDataset {
 	pub fn new<S: Into<String>>(s: S) -> Self {
 		Self {
@@ -217,13 +228,6 @@ impl IndexedPackingListDataset {
 		// Sections -> Data
 
 		log::debug!("Parsing packing list information");
-
-		lazy_static::lazy_static! {
-			static ref TABLE_INFORMATION_RE: regex::Regex =
-				regex::Regex::new("^(?P<table>[A-Za-z0-9]+)\\|(?P<loc>[\\d: ]+)\\|$")
-					.expect("couldn't parse regex");
-			static ref FILE_INFORMATION_RE: regex::Regex = regex::Regex::new("^(?P<filename>(?P<stusab>[a-z]{2})(?P<ident>\\w+)(?P<year>\\d{4})\\.(?P<ds>.+))\\|(?P<date>.+)\\|(?P<size>\\d+)\\|(?P<lines>\\d+)\\|$").expect("couldn't parse regex");
-		}
 
 		#[derive(Clone, Debug, PartialEq)]
 		enum Line {
