@@ -200,7 +200,8 @@ impl IndexedPackingListDataset {
 
 		log::debug!("Opening {} for reading", &path);
 
-		let file = std::fs::File::open(&path).unwrap_or_else(|_| panic!("could not open {} for reading", &path));
+		let file =
+			std::fs::File::open(&path).unwrap_or_else(|_| panic!("could not open {} for reading", &path));
 		let stream = BufReader::new(file);
 
 		log::debug!("Successfully opened {}", &path);
@@ -218,7 +219,9 @@ impl IndexedPackingListDataset {
 
 		let sections = lines
 			.split(|line| line == &"#".repeat(80) || line == &"#".repeat(81))
-			.filter(|section| !section.is_empty() && !(section.iter().all(|line| line.trim().is_empty())));
+			.filter(|section| {
+				!section.is_empty() && !(section.iter().all(|line| line.trim().is_empty()))
+			});
 
 		// Sections -> Data
 
@@ -373,8 +376,8 @@ impl IndexedPackingListDataset {
 
 				log::trace!(" -> file_name = {:?}", file_name);
 
-				let file =
-					std::fs::File::open(&file_name).unwrap_or_else(|_| panic!("couldn't open file {:?}", file_name));
+				let file = std::fs::File::open(&file_name)
+					.unwrap_or_else(|_| panic!("couldn't open file {:?}", file_name));
 
 				self.files.insert(file_type, file);
 			}
