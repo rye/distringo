@@ -117,7 +117,7 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 	) -> Result<csv::StringRecord> {
 		log::debug!("Requesting {:?}", requested_schemas);
 
-		let ranges = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
+		let ranges: Vec<(FileType, &File, core::ops::Range<usize>)> = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
 			(*schema, self.tables.get(schema).unwrap().clone())
 		}).flat_map(|(schema, locations)| -> Vec<(FileType, &File, core::ops::Range<usize>)> {
 			locations.iter().map(|location: &TableSegmentLocation| -> (usize, core::ops::Range<usize>) {
@@ -131,45 +131,63 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 			.map(|(fty, columns)| -> (FileType, &File, core::ops::Range<usize>) {
 				(fty, self.files.get(&fty).unwrap(), columns)
 			}).collect()
-		});
+		})
+		.collect();
 
-		// TODO we should only grab a _single_ record from the reader (the entire
-		// line) and then slice it appropriately later along.
 		match &self.index {
 			Some(index) => {
-				let mut record: Vec<String> = Vec::new();
-				ranges
-					.map(|(fty, file, cols)| -> Vec<String> {
-						// TODO refactor mutex usage to be a bit more efficient, and consider alternatives
-						let idx = index.get(&fty).unwrap();
-						let reader = BufReader::new(file);
-						let mut reader = csv::Reader::from_reader(reader);
+				let ftys: std::collections::HashSet<FileType> = ranges
+					.iter()
+					.map(|(fty, _, _)| -> FileType { *fty })
+					.collect();
 
-						let offset = idx
+				// TODO leave as iter
+				let records_from_file: HashMap<FileType, csv::StringRecord> = ftys
+					.iter()
+					.map(|fty| -> (FileType, csv::StringRecord) {
+						let file: &File = self.files.get(fty).unwrap();
+
+						let corresponding_logrec_position_index = index.get(&fty).unwrap();
+						let offset: &u64 = corresponding_logrec_position_index
 							.get(&logical_record_number)
-							.unwrap_or_else(|| panic!("index is missing {}", logical_record_number));
+							.unwrap();
 
-						let pos = {
-							let mut pos = csv::Position::new();
-							pos.set_byte(*offset);
-							pos
-						};
+						use std::io::Seek;
+						let mut reader = BufReader::new(file);
+						reader
+							.seek(std::io::SeekFrom::Start(*offset))
+							.expect("couldn't seek to record");
 
-						reader.seek(pos).expect("couldn't seek reader");
+						let mut reader = csv::ReaderBuilder::new()
+							.has_headers(false)
+							.from_reader(reader);
+						let mut record = csv::StringRecord::new();
+						reader
+							.read_record(&mut record)
+							.expect("couldn't read record");
 
-						let rec: csv::StringRecord = {
-							let mut rec = csv::StringRecord::new();
-							reader.read_record(&mut rec).unwrap();
-							rec
-						};
+						debug_assert!(
+							record[4].parse::<LogicalRecordNumber>().unwrap() == logical_record_number
+						);
 
-						debug_assert!(rec[4].parse::<u64>().unwrap() == logical_record_number);
+						(*fty, record)
+					})
+					.collect();
 
+				log::debug!("Read records: {:?}", records_from_file);
+
+				let mut record: Vec<String> = Vec::new();
+
+				ranges
+					.iter()
+					.map(|(fty, _, cols)| -> Vec<String> {
+						let record: &csv::StringRecord = records_from_file.get(&fty).unwrap();
+						let cols: core::ops::Range<usize> = cols.clone();
 						cols
-							.map(|col: usize| -> String { rec[col].to_string() })
+							.map(|col: usize| -> String { record[col].to_string() })
 							.collect()
 					})
-					.for_each(|mut table_part| record.append(&mut table_part));
+					.for_each(|mut table_chunk| record.append(&mut table_chunk));
 
 				Ok(csv::StringRecord::from(record))
 			}
