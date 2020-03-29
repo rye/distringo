@@ -219,7 +219,7 @@ impl IndexedPackingListDataset {
 
 		let sections = lines
 			.split(|line| line == &"#".repeat(80) || line == &"#".repeat(81))
-			.filter(|section| !section.is_empty() && !(section.iter().all(|line| line.trim().len() == 0)));
+			.filter(|section| !section.is_empty() && !(section.iter().all(|line| line.trim().is_empty())));
 
 		// Sections -> Data
 
