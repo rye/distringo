@@ -153,7 +153,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 					let br = BufReader::new(file);
 					let mut reader = csv::Reader::from_reader(br);
 
-					let offset = idx.get(logical_record_number - 1_u64).expect(&format!("index is missing {}", logical_record_number - 1_u64));
+					let offset = idx.get(logical_record_number - 1_u64).unwrap_or_else(|_| panic!("index is missing {}", logical_record_number - 1_u64));
 					reader.seek(offset).expect("couldn't seek reader");
 
 					let mut rec: csv::StringRecord = csv::StringRecord::new();
@@ -201,7 +201,7 @@ impl IndexedPackingListDataset {
 
 		log::debug!("Opening {} for reading", &path);
 
-		let file = std::fs::File::open(&path).expect(&format!("could not open {} for reading", &path));
+		let file = std::fs::File::open(&path).unwrap_or_else(|_| panic!("could not open {} for reading", &path));
 		let stream = BufReader::new(file);
 
 		log::debug!("Successfully opened {}", &path);
@@ -376,7 +376,7 @@ impl IndexedPackingListDataset {
 				log::trace!(" -> file_name = {:?}", file_name);
 
 				let file =
-					std::fs::File::open(&file_name).expect(&format!("couldn't open file {:?}", file_name));
+					std::fs::File::open(&file_name).unwrap_or_else(|_| panic!("couldn't open file {:?}", file_name));
 
 				self.files.insert(file_type, file);
 			}
