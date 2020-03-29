@@ -255,7 +255,7 @@ impl IndexedPackingListDataset {
 
 							let table_locations: Vec<TableSegmentSpecifier> = table_locations
 								.as_str()
-								.split(" ")
+								.split(' ')
 								.map(|chunk| -> TableSegmentSpecifier {
 									let split: Vec<&str> = chunk.split(':').collect();
 									log::trace!("{:?}, {:?}", captures, split);
