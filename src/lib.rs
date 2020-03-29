@@ -419,9 +419,8 @@ impl IndexedPackingListDataset {
 				for table_segment_spec in location_specifiers {
 					let file_number: usize = table_segment_spec.file;
 
-					if !current_column_numbers.contains_key(&file_number) {
-						current_column_numbers.insert(file_number, 5_usize);
-					}
+					// If our file doesn't already have a corresponding column counter, start at 5
+					current_column_numbers.entry(file_number).or_insert(5_usize);
 
 					let current_column_number: usize = {
 						*current_column_numbers
