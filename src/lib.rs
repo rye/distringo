@@ -209,7 +209,6 @@ impl IndexedPackingListDataset {
 
 		log::debug!("Reading lines from {}", &path);
 
-		let delimiter: String = "#".repeat(80);
 		let lines: Vec<String> = stream
 			.lines()
 			.map(|r| r.expect("couldn't parse line"))
