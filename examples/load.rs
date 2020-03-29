@@ -13,9 +13,13 @@ fn main() -> uptown::error::Result<()> {
 	let start = std::time::Instant::now();
 	let string_record = ds.get_logical_record(
 		0335180,
-		vec![uptown::Schema::Census2010Pl94_171(Some(
-			uptown::census2010::pl94_171::P1,
-		))],
+		vec![
+			uptown::Schema::Census2010Pl94_171(Some(uptown::census2010::pl94_171::P1)),
+			uptown::Schema::Census2010Pl94_171(Some(uptown::census2010::pl94_171::P2)),
+			uptown::Schema::Census2010Pl94_171(Some(uptown::census2010::pl94_171::P3)),
+			uptown::Schema::Census2010Pl94_171(Some(uptown::census2010::pl94_171::P4)),
+			uptown::Schema::Census2010Pl94_171(Some(uptown::census2010::pl94_171::H1)),
+		],
 	)?;
 	println!(
 		"Retrieved record {:?} in {}ns",
