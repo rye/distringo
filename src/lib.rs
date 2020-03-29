@@ -130,7 +130,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 
 		let ranges = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
 			(*schema, self.tables.get(schema).unwrap().clone())
-		}).map(|(schema, locations)| -> Vec<(FileType, &std::fs::File, core::ops::Range<usize>)> {
+		}).flat_map(|(schema, locations)| -> Vec<(FileType, &std::fs::File, core::ops::Range<usize>)> {
 			locations.iter().map(|location: &TableSegmentLocation| -> (usize, core::ops::Range<usize>) {
 				(location.file, location.range.clone())
 			}).map(|(file_number, columns): (usize, core::ops::Range<usize>)| -> (FileType, core::ops::Range<usize>) {
@@ -142,8 +142,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 			.map(|(fty, columns)| -> (FileType, &std::fs::File, core::ops::Range<usize>) {
 				(fty, self.files.get(&fty).unwrap(), columns)
 			}).collect()
-		})
-		.flatten();
+		});
 
 		match &self.index {
 			Some(index) => {
