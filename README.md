@@ -1,12 +1,12 @@
-# `uptown`
+# `distringo`
 
-Uptown is (going to be) a redistricting PWA.
+Distringo is (going to be) a redistricting PWA.
 
 More to come later.
 
 ## License
 
-Uptown is released under the terms of the MIT License.
+Distringo is released under the terms of the MIT License.
 For the body of the license text, see the `LICENSE` file at the root of the source tree, or below.
 
 ```

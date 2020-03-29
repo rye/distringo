@@ -21,24 +21,24 @@ fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
 	// Compose the routes together.
 	warp::any()
 		.and(warp::get().and(slash.or(public_files)))
-		.with(warp::log("uptown"))
+		.with(warp::log("distringo"))
 		.recover(handle_rejection)
 }
 
 #[tokio::main]
-async fn main() -> uptown::error::Result<()> {
-	if std::env::var("UPTOWN_LOG").ok().is_none() {
-		std::env::set_var("UPTOWN_LOG", "info");
+async fn main() -> distringo::error::Result<()> {
+	if std::env::var("DISTRINGO_LOG").ok().is_none() {
+		std::env::set_var("DISTRINGO_LOG", "info");
 	}
 
-	pretty_env_logger::init_custom_env("UPTOWN_LOG");
+	pretty_env_logger::init_custom_env("DISTRINGO_LOG");
 
 	let mut settings = Config::default();
 
 	settings.set_default("server.host", "::")?;
 	settings.set_default("server.port", 2020)?;
 
-	settings.merge(config::Environment::with_prefix("UPTOWN"))?;
+	settings.merge(config::Environment::with_prefix("DISTRINGO"))?;
 
 	settings.merge(config::File::with_name("config"))?;
 
@@ -48,11 +48,11 @@ async fn main() -> uptown::error::Result<()> {
 		let host: IpAddr = settings
 			.get_str("server.host")?
 			.parse()
-			.map_err(|_| uptown::error::Error::InvalidServerHost)?;
+			.map_err(|_| distringo::error::Error::InvalidServerHost)?;
 		let port: u16 = settings
 			.get_int("server.port")?
 			.try_into()
-			.map_err(|_| uptown::error::Error::InvalidServerPort)?;
+			.map_err(|_| distringo::error::Error::InvalidServerPort)?;
 
 		SocketAddr::new(host, port)
 	};

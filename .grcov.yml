@@ -2,7 +2,7 @@ branch: true
 llvm: true
 output-type: lcov
 output-file: ./lcov.info
-prefix-dir: /home/runner/work/uptown/uptown/
+prefix-dir: /home/runner/work/distringo/distringo/
 
 ignore:
 - "/*"

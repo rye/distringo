@@ -1,11 +1,11 @@
-div.leaflet-control.uptown-controls {
+div.leaflet-control.distringo-controls {
 	display: flex;
 	width: 16px;
 	height: 16px;
 	background-color: #404040;
 }
 
-div.uptown-controls.collapsed {
+div.distringo-controls.collapsed {
 	background-color: #ff0000;
 }
 

@@ -1,4 +1,4 @@
-L.Control.Uptown = L.Control.extend({
+L.Control.Distringo = L.Control.extend({
 	onUpdate: function(e) {
 		if (this.state.collapsed) {
 			this.getContainer().classList.add('collapsed');
@@ -20,7 +20,7 @@ L.Control.Uptown = L.Control.extend({
 	onAdd: function(map) {
 		let element = L.DomUtil.create('div');
 
-		element.classList.add('uptown-controls');
+		element.classList.add('distringo-controls');
 		element.classList.add('collapsed');
 
 		L.DomEvent.on(element, { click: this.onClick }, this);
@@ -37,7 +37,7 @@ L.Control.Uptown = L.Control.extend({
 	}
 });
 
-L.control.uptown = function(opts) { return new L.Control.Uptown(opts); }
+L.control.distringo = function(opts) { return new L.Control.Distringo(opts); }
 
 function getMapState() {
 	try {

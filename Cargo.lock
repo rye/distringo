@@ -225,6 +225,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "distringo"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "csv",
+ "csv-index",
+ "hyper",
+ "lazy_static",
+ "log 0.4.8",
+ "pretty_env_logger",
+ "regex",
+ "serde",
+ "serde_yaml",
+ "simple_logger",
+ "tokio",
+ "warp",
+]
+
+[[package]]
 name = "dtoa"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1381,25 +1400,6 @@ name = "unicode-xid"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
-
-[[package]]
-name = "uptown"
-version = "0.1.0"
-dependencies = [
- "config",
- "csv",
- "csv-index",
- "hyper",
- "lazy_static",
- "log 0.4.8",
- "pretty_env_logger",
- "regex",
- "serde",
- "serde_yaml",
- "simple_logger",
- "tokio",
- "warp",
-]
 
 [[package]]
 name = "url"
