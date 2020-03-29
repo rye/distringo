@@ -1,6 +1,7 @@
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -85,7 +86,7 @@ pub struct IndexedPackingListDataset {
 	schema: Option<Schema>,
 	index: Option<LogicalRecordIndex>,
 	tables: HashMap<Schema, TableLocations>,
-	files: HashMap<FileType, std::fs::File>,
+	files: HashMap<FileType, File>,
 }
 
 pub(crate) type LogicalRecordIndex =
@@ -117,7 +118,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 
 		let ranges = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
 			(*schema, self.tables.get(schema).unwrap().clone())
-		}).flat_map(|(schema, locations)| -> Vec<(FileType, &std::fs::File, core::ops::Range<usize>)> {
+		}).flat_map(|(schema, locations)| -> Vec<(FileType, &File, core::ops::Range<usize>)> {
 			locations.iter().map(|location: &TableSegmentLocation| -> (usize, core::ops::Range<usize>) {
 				(location.file, location.range.clone())
 			}).map(|(file_number, columns): (usize, core::ops::Range<usize>)| -> (FileType, core::ops::Range<usize>) {
@@ -126,7 +127,7 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 					_ => unimplemented!(),
 				}, columns)
 			})
-			.map(|(fty, columns)| -> (FileType, &std::fs::File, core::ops::Range<usize>) {
+			.map(|(fty, columns)| -> (FileType, &File, core::ops::Range<usize>) {
 				(fty, self.files.get(&fty).unwrap(), columns)
 			}).collect()
 		});
@@ -134,25 +135,29 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 		match &self.index {
 			Some(index) => {
 				let mut record: Vec<String> = Vec::new();
-				ranges.map(|(fty, file, cols): (FileType, &std::fs::File, core::ops::Range<usize>)| -> Vec<String> {
-					let mut idx = index.get(&fty).unwrap().lock().unwrap();
-					let br = BufReader::new(file);
-					let mut reader = csv::Reader::from_reader(br);
+				ranges
+					.map(|(fty, file, cols)| -> Vec<String> {
+						// TODO refactor mutex usage to be a bit more efficient, and consider alternatives
+						let mut idx = index.get(&fty).unwrap().lock().unwrap();
+						let reader = BufReader::new(file);
+						let mut reader = csv::Reader::from_reader(reader);
 
-					let offset = idx.get(logical_record_number - 1_u64).unwrap_or_else(|_| panic!("index is missing {}", logical_record_number - 1_u64));
-					reader.seek(offset).expect("couldn't seek reader");
+						let offset = idx
+							.get(logical_record_number - 1_u64)
+							.unwrap_or_else(|_| panic!("index is missing {}", logical_record_number - 1_u64));
+						reader.seek(offset).expect("couldn't seek reader");
 
-					let mut rec: csv::StringRecord = csv::StringRecord::new();
-					reader.read_record(&mut rec).unwrap();
-					let rec = rec;
+						let mut rec: csv::StringRecord = csv::StringRecord::new();
+						reader.read_record(&mut rec).unwrap();
+						let rec = rec;
 
-					debug_assert!(rec[4].parse::<u64>().unwrap() == logical_record_number);
+						debug_assert!(rec[4].parse::<u64>().unwrap() == logical_record_number);
 
-					cols.map(|col: usize| -> String {
-						rec[col].to_string()
-					}).collect()
-				})
-				.for_each(|mut table_part: Vec<String>| record.append(&mut table_part));
+						cols
+							.map(|col: usize| -> String { rec[col].to_string() })
+							.collect()
+					})
+					.for_each(|mut table_part| record.append(&mut table_part));
 
 				Ok(csv::StringRecord::from(record))
 			}
@@ -187,8 +192,7 @@ impl IndexedPackingListDataset {
 
 		log::debug!("Opening {} for reading", &path);
 
-		let file =
-			std::fs::File::open(&path).unwrap_or_else(|_| panic!("could not open {} for reading", &path));
+		let file = File::open(&path).unwrap_or_else(|_| panic!("could not open {} for reading", &path));
 		let stream = BufReader::new(file);
 
 		log::debug!("Successfully opened {}", &path);
@@ -356,15 +360,18 @@ impl IndexedPackingListDataset {
 					.as_ref()
 					.parent()
 					.expect("packing list path must be a file");
-				let mut full_file_name = PathBuf::new();
-				full_file_name.push(parent_directory);
-				full_file_name.push(file_name);
-				let file_name = full_file_name;
+
+				let file_name = {
+					let mut path = PathBuf::new();
+					path.push(parent_directory);
+					path.push(file_name);
+					path
+				};
 
 				log::trace!(" -> file_name = {:?}", file_name);
 
-				let file = std::fs::File::open(&file_name)
-					.unwrap_or_else(|_| panic!("couldn't open file {:?}", file_name));
+				let file =
+					File::open(&file_name).unwrap_or_else(|_| panic!("couldn't open file {:?}", file_name));
 
 				self.files.insert(file_type, file);
 			}
@@ -460,7 +467,7 @@ impl IndexedPackingListDataset {
 
 		log::debug!("Indexing tabular files...");
 
-		let tabular_files: HashMap<&FileType, &std::fs::File> = self
+		let tabular_files: HashMap<&FileType, &File> = self
 			.files
 			.iter()
 			.filter(|(fty, _)| -> bool {
