@@ -355,7 +355,6 @@ impl IndexedPackingListDataset {
 				if self.schema.is_none() {
 					let dataset_schema = match file_type {
 						FileType::Census2010Pl94_171(_) => Schema::Census2010Pl94_171(None),
-						_ => unimplemented!(),
 					};
 
 					log::debug!("Inferred dataset schema of {:?}", dataset_schema);
