@@ -133,6 +133,8 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 			}).collect()
 		});
 
+		// TODO we should only grab a _single_ record from the reader (the entire
+		// line) and then slice it appropriately later along.
 		match &self.index {
 			Some(index) => {
 				let mut record: Vec<String> = Vec::new();
@@ -148,9 +150,11 @@ impl Dataset<csv::StringRecord> for IndexedPackingListDataset {
 							.unwrap_or_else(|_| panic!("index is missing {}", logical_record_number - 1_u64));
 						reader.seek(offset).expect("couldn't seek reader");
 
-						let mut rec: csv::StringRecord = csv::StringRecord::new();
-						reader.read_record(&mut rec).unwrap();
-						let rec = rec;
+						let rec: csv::StringRecord = {
+							let mut rec = csv::StringRecord::new();
+							reader.read_record(&mut rec).unwrap();
+							rec
+						};
 
 						debug_assert!(rec[4].parse::<u64>().unwrap() == logical_record_number);
 
@@ -235,8 +239,8 @@ impl IndexedPackingListDataset {
 			FileInformation(PathBuf, Schema, String),
 		}
 
-		let sections: Vec<Vec<Line>> = sections
-			.map(|lines: &[String]| -> Vec<Line> {
+		let lines: Vec<Line> = sections
+			.flat_map(|lines: &[String]| -> Vec<Line> {
 				lines
 					.iter()
 					.filter_map(|line: &String| -> Option<Line> {
@@ -297,43 +301,10 @@ impl IndexedPackingListDataset {
 					})
 					.collect()
 			})
-			.filter(|lines| !lines.is_empty())
 			.collect();
-
-		let data_segmentation_lines: Vec<&Line> = sections
-			.iter()
-			.filter(|section| {
-				section.iter().all(|line| match line {
-					Line::DataSegmentationInformation(..) => true,
-					_ => false,
-				})
-			})
-			.flatten()
-			.collect();
-
-		log::debug!(
-			"{} lines containing data segmentation information",
-			data_segmentation_lines.len()
-		);
-
-		let file_information_lines: Vec<&Line> = sections
-			.iter()
-			.filter(|section| {
-				section.iter().all(|line| match line {
-					Line::FileInformation(..) => true,
-					_ => false,
-				})
-			})
-			.flatten()
-			.collect();
-
-		log::debug!(
-			"{} lines containing file information",
-			file_information_lines.len()
-		);
 
 		// First, load up the file information as we want it
-		for line in file_information_lines {
+		for line in &lines {
 			if let Line::FileInformation(file_name, schema, ident) = line {
 				log::trace!("Processing file information line: {:?}", line);
 
@@ -384,7 +355,7 @@ impl IndexedPackingListDataset {
 		// Next, set up the references for data segmentation information
 		let mut current_column_numbers: HashMap<usize, usize> = HashMap::new();
 
-		for line in data_segmentation_lines {
+		for line in &lines {
 			if let Line::DataSegmentationInformation(table_name, table_location) = line {
 				log::trace!("Processing Data Segmentation line: {:?}", line);
 
@@ -411,7 +382,7 @@ impl IndexedPackingListDataset {
 					(None, _) => panic!("schema unknown"),
 				};
 
-				let location_specifiers: &Vec<TableSegmentSpecifier> = table_location;
+				let location_specifiers: &Vec<TableSegmentSpecifier> = &table_location;
 
 				let mut locations: Vec<TableSegmentLocation> = Vec::new();
 
