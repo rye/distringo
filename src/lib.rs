@@ -20,6 +20,9 @@ pub trait Dataset<LogicalRecord> {
 		number: LogicalRecordNumber,
 		schemas: Vec<crate::Schema>,
 	) -> Result<LogicalRecord>;
+
+	/// Retrieve the logical record corresponding to GeoID `id`
+	fn get_logical_record_number_for_geoid(&self, geoid: &str) -> Result<LogicalRecordNumber>;
 }
 
 pub mod census2010 {
@@ -191,8 +194,15 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 
 				Ok(csv::StringRecord::from(record))
 			}
+
 			None => unimplemented!(),
 		}
+	}
+
+	fn get_logical_record_number_for_geoid(&self, geoid: &str) -> Result<u64> {
+		let logrecno = 0;
+
+		Ok(logrecno)
 	}
 }
 
