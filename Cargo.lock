@@ -206,16 +206,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "csv-index"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f274135fcb98bd7e6e47a9e0b44639ec53b3e5d6c1930e2a9e6a014f90470404"
-dependencies = [
- "byteorder",
- "csv",
-]
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,7 +220,6 @@ version = "0.1.0"
 dependencies = [
  "config",
  "csv",
- "csv-index",
  "hyper",
  "lazy_static",
  "log 0.4.8",
