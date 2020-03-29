@@ -220,7 +220,7 @@ impl IndexedPackingListDataset {
 
 		let sections = lines
 			.split(|line| line == &"#".repeat(80) || line == &"#".repeat(81))
-			.filter(|section| section.len() > 0 && !(section.iter().all(|line| line.trim().len() == 0)));
+			.filter(|section| !section.is_empty() && !(section.iter().all(|line| line.trim().len() == 0)));
 
 		// Sections -> Data
 
@@ -301,7 +301,7 @@ impl IndexedPackingListDataset {
 					})
 					.collect()
 			})
-			.filter(|lines| lines.len() > 0)
+			.filter(|lines| !lines.is_empty())
 			.collect();
 
 		let data_segmentation_lines: Vec<&Line> = sections
