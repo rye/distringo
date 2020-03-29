@@ -11,11 +11,6 @@ pub enum Error {
 
 	InvalidServerHost,
 	InvalidServerPort,
-
-	ParsePackingListLine,
-	ParsePackingListFilename,
-
-	MissingPackingList,
 }
 
 pub type Result<T> = result::Result<T, Error>;

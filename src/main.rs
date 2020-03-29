@@ -1,46 +1,13 @@
 use config::Config;
-use hyper::{Response, StatusCode};
+use hyper::StatusCode;
 use log::warn;
-use std::collections::HashMap;
-use std::path::PathBuf;
-use uptown::parser::pl94_171::Dataset;
 
 use std::net::IpAddr;
 use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn shapefiles() -> warp::filters::BoxedFilter<(impl Reply,)> {
-	// GET .../shapefile/<id>
-	warp::get()
-		.and(warp::path!("shapefile" / String))
-		.map(|shapefile_name| {
-			Response::builder()
-				.body(format!("shp {}", shapefile_name))
-				.unwrap()
-		})
-		.boxed()
-}
-
-fn datasets() -> warp::filters::BoxedFilter<(impl Reply,)> {
-	// GET .../dataset/<id>
-	warp::get()
-		.and(warp::path!("dataset" / String))
-		.map(|dataset_name| {
-			Response::builder()
-				.body(format!("ds {}", dataset_name))
-				.unwrap()
-		})
-		.boxed()
-}
-
-fn api() -> warp::filters::BoxedFilter<(impl Reply,)> {
-	warp::path!("api" / ..)
-		.and(shapefiles().or(datasets()))
-		.boxed()
-}
-
-fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
+fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
 	// GET / => (fs ./public/index.html)
 	let slash = warp::get()
 		.and(warp::path::end())
@@ -53,18 +20,18 @@ fn routes() -> impl warp::Filter<Extract = impl Reply> + Clone {
 
 	// Compose the routes together.
 	warp::any()
-		.and(warp::get().and(slash.or(public_files)).or(api()))
+		.and(warp::get().and(slash.or(public_files)))
 		.with(warp::log("uptown"))
 		.recover(handle_rejection)
 }
 
 #[tokio::main]
 async fn main() -> uptown::error::Result<()> {
-	if std::env::var("RUST_LOG").ok().is_none() {
-		std::env::set_var("RUST_LOG", "info");
+	if std::env::var("UPTOWN_LOG").ok().is_none() {
+		std::env::set_var("UPTOWN_LOG", "info");
 	}
 
-	pretty_env_logger::init();
+	pretty_env_logger::init_custom_env("UPTOWN_LOG");
 
 	let mut settings = Config::default();
 
@@ -74,50 +41,6 @@ async fn main() -> uptown::error::Result<()> {
 	settings.merge(config::Environment::with_prefix("UPTOWN"))?;
 
 	settings.merge(config::File::with_name("config"))?;
-
-	let datasets: HashMap<String, Box<Dataset>> = {
-		let datasets = settings.get_table("datasets")?;
-
-		datasets
-			.iter()
-			.map(
-				|(name, value)| -> uptown::error::Result<(String, Box<Dataset>)> {
-					let value: HashMap<String, config::Value> = value.clone().into_table()?;
-
-					let packing_list: PathBuf = value
-						.get("packing_list")
-						.ok_or(uptown::error::Error::MissingPackingList)?
-						.clone()
-						.into_str()?
-						.into();
-
-					let tables: Vec<String> = value
-						.get("tables")
-						.map(
-							|tables: &config::Value| -> uptown::error::Result<Vec<String>> {
-								let tables: Vec<String> = tables
-									.clone()
-									.into_array()?
-									.iter()
-									.map(|v: &config::Value| -> uptown::error::Result<String> {
-										Ok(v.clone().into_str()?)
-									})
-									.filter_map(Result::ok)
-									.collect();
-
-								Ok(tables)
-							},
-						)
-						.unwrap_or_else(|| Ok(Vec::new()))?;
-
-					let dataset: Box<Dataset> = Box::new(Dataset::load(packing_list, &tables)?);
-
-					Ok((name.to_string(), dataset))
-				},
-			)
-			.filter_map(Result::ok)
-			.collect()
-	};
 
 	let socket = {
 		use core::convert::TryInto;
