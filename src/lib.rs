@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 
 pub mod error;
 
 pub type LogicalRecordNumber = u64;
+
+pub(crate) type LogicalRecordPositionIndex = HashMap<LogicalRecordNumber, u64>;
 
 /// A trait containing behavior expected for datasets
 pub trait Dataset<LogicalRecord> {
@@ -90,8 +91,7 @@ pub struct IndexedDataset {
 	files: HashMap<FileType, File>,
 }
 
-pub(crate) type LogicalRecordIndex =
-	HashMap<FileType, Mutex<csv_index::RandomAccessSimple<std::io::Cursor<Vec<u8>>>>>;
+pub(crate) type LogicalRecordIndex = HashMap<FileType, LogicalRecordPositionIndex>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TableSegmentSpecifier {
@@ -141,14 +141,21 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 				ranges
 					.map(|(fty, file, cols)| -> Vec<String> {
 						// TODO refactor mutex usage to be a bit more efficient, and consider alternatives
-						let mut idx = index.get(&fty).unwrap().lock().unwrap();
+						let idx = index.get(&fty).unwrap();
 						let reader = BufReader::new(file);
 						let mut reader = csv::Reader::from_reader(reader);
 
 						let offset = idx
-							.get(logical_record_number - 1_u64)
-							.unwrap_or_else(|_| panic!("index is missing {}", logical_record_number - 1_u64));
-						reader.seek(offset).expect("couldn't seek reader");
+							.get(&logical_record_number)
+							.unwrap_or_else(|| panic!("index is missing {}", logical_record_number));
+
+						let pos = {
+							let mut pos = csv::Position::new();
+							pos.set_byte(*offset);
+							pos
+						};
+
+						reader.seek(pos).expect("couldn't seek reader");
 
 						let rec: csv::StringRecord = {
 							let mut rec = csv::StringRecord::new();
@@ -457,16 +464,28 @@ impl IndexedDataset {
 			log::debug!("Indexing file with FileType {:?}", fty);
 
 			let file_reader = BufReader::new(file);
-			let mut file_reader = csv::Reader::from_reader(file_reader);
-			let mut index_data = std::io::Cursor::new(vec![]);
+			let mut file_reader = csv::ReaderBuilder::new()
+				.has_headers(false)
+				.from_reader(file_reader);
+			let mut index = HashMap::new();
 
 			log::trace!("Creating index...");
-			csv_index::RandomAccessSimple::create(&mut file_reader, &mut index_data)?;
 
-			log::trace!("Opening index...");
+			for record in file_reader.records() {
+				let record: csv::StringRecord = record?;
+				let position = record.position().expect("couldn't find position of record");
 
-			let index = csv_index::RandomAccessSimple::open(index_data)?;
-			let index = Mutex::new(index);
+				let byte_offset: u64 = position.byte();
+				let logrecno: LogicalRecordNumber = record[4]
+					.parse::<LogicalRecordNumber>()
+					.expect("couldn't parse logical record number");
+
+				if logrecno < 10 || logrecno % 1000 == 0 {
+					log::trace!("Indexed LR {} at offset {}", logrecno, byte_offset);
+				}
+
+				index.insert(logrecno, byte_offset);
+			}
 
 			log::trace!("Adding index to registry...");
 
