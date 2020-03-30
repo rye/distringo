@@ -1,6 +1,7 @@
 use crate::error::Result;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -9,6 +10,7 @@ use std::path::{Path, PathBuf};
 pub mod error;
 
 pub type LogicalRecordNumber = u64;
+pub type GeoId = String;
 
 pub(crate) type LogicalRecordPositionIndex = HashMap<LogicalRecordNumber, u64>;
 
@@ -89,11 +91,13 @@ mod tests {
 pub struct IndexedDataset {
 	identifier: String,
 	schema: Option<Schema>,
-	index: Option<LogicalRecordIndex>,
+	header_index: Option<GeographicalHeaderIndex>,
+	logical_record_index: Option<LogicalRecordIndex>,
 	tables: HashMap<Schema, TableLocations>,
 	files: HashMap<FileType, File>,
 }
 
+pub(crate) type GeographicalHeaderIndex = BTreeMap<GeoId, (LogicalRecordNumber, u64)>;
 pub(crate) type LogicalRecordIndex = HashMap<FileType, LogicalRecordPositionIndex>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -137,7 +141,7 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 		})
 		.collect();
 
-		match &self.index {
+		match &self.logical_record_index {
 			Some(index) => {
 				let ftys: std::collections::HashSet<FileType> = ranges
 					.iter()
@@ -200,9 +204,15 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 	}
 
 	fn get_logical_record_number_for_geoid(&self, geoid: &str) -> Result<u64> {
-		let logrecno = 0;
+		if let Some(index) = &self.header_index {
+			let result: &(LogicalRecordNumber, u64) = index.get(geoid).unwrap();
 
-		Ok(logrecno)
+			let logrecno: LogicalRecordNumber = result.0;
+
+			Ok(logrecno)
+		} else {
+			unimplemented!()
+		}
 	}
 }
 
@@ -210,7 +220,8 @@ impl Default for IndexedDataset {
 	fn default() -> Self {
 		Self {
 			identifier: "".to_string(),
-			index: None,
+			logical_record_index: None,
+			header_index: None,
 			schema: None,
 			tables: HashMap::new(),
 			files: HashMap::new(),
@@ -471,56 +482,86 @@ impl IndexedDataset {
 	}
 
 	pub fn index(mut self) -> Result<Self> {
-		assert!(self.index.is_none());
+		assert!(self.logical_record_index.is_none());
 
-		let mut new_index = LogicalRecordIndex::new();
+		let mut new_header_index = GeographicalHeaderIndex::new();
+		let mut new_logical_record_index = LogicalRecordIndex::new();
 
 		log::debug!("Indexing tabular files...");
 
-		let tabular_files: HashMap<&FileType, &File> = self
-			.files
-			.iter()
-			.filter(|(fty, _)| -> bool {
-				match fty {
-					FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(_)) => true,
-					_ => false,
-				}
-			})
-			.collect();
+		for (fty, file) in &self.files {
+			match fty {
+				FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(tabular_file_number)) => {
+					log::debug!("Indexing tabular file {}", tabular_file_number);
 
-		for (fty, file) in tabular_files {
-			log::debug!("Indexing file with FileType {:?}", fty);
+					let file_reader = BufReader::new(file);
+					let mut file_reader = csv::ReaderBuilder::new()
+						.has_headers(false)
+						.from_reader(file_reader);
+					let mut index = HashMap::new();
 
-			let file_reader = BufReader::new(file);
-			let mut file_reader = csv::ReaderBuilder::new()
-				.has_headers(false)
-				.from_reader(file_reader);
-			let mut index = HashMap::new();
+					log::trace!("Creating index...");
 
-			log::trace!("Creating index...");
+					for record in file_reader.records() {
+						let record: csv::StringRecord = record?;
+						let position = record.position().expect("couldn't find position of record");
 
-			for record in file_reader.records() {
-				let record: csv::StringRecord = record?;
-				let position = record.position().expect("couldn't find position of record");
+						let byte_offset: u64 = position.byte();
+						let logrecno: LogicalRecordNumber = record[4]
+							.parse::<LogicalRecordNumber>()
+							.expect("couldn't parse logical record number");
 
-				let byte_offset: u64 = position.byte();
-				let logrecno: LogicalRecordNumber = record[4]
-					.parse::<LogicalRecordNumber>()
-					.expect("couldn't parse logical record number");
+						index.insert(logrecno, byte_offset);
+					}
 
-				if logrecno < 10 || logrecno % 1000 == 0 {
-					log::trace!("Indexed LR {} at offset {}", logrecno, byte_offset);
+					log::trace!("Adding index to registry...");
+
+					new_logical_record_index.insert(*fty, index);
 				}
 
-				index.insert(logrecno, byte_offset);
+				FileType::Census2010Pl94_171(census2010::pl94_171::GeographicalHeader) => {
+					log::debug!("Indexing geographical header file");
+
+					let mut reader = BufReader::new(file);
+					let mut buf = String::new();
+					let mut pos = 0_u64;
+
+					loop {
+						let bytes = reader.read_line(&mut buf)?;
+
+						if bytes > 0 {
+							let logrecno = &buf[18..25];
+							let state_fips = &buf[27..29];
+							let county = &buf[29..32];
+							let tract = &buf[54..60];
+							let block = &buf[61..65];
+
+							match (state_fips, county, tract, block) {
+								(_s, "   ", "      ", "    ") => {}
+								(_s, _c, "      ", "    ") => {}
+								(_s, _c, _t, "    ") => {}
+								(s, c, t, b) => {
+									let logrecno: LogicalRecordNumber = logrecno.parse()?;
+									let geoid: GeoId = [s, c, t, b].concat();
+
+									assert!(!new_header_index.contains_key(&geoid));
+
+									new_header_index.insert(geoid, (logrecno, pos));
+								}
+							};
+
+							pos += bytes as u64;
+							buf.clear();
+						} else {
+							break;
+						}
+					}
+				}
 			}
-
-			log::trace!("Adding index to registry...");
-
-			new_index.insert(*fty, index);
 		}
 
-		self.index = Some(new_index);
+		self.logical_record_index = Some(new_logical_record_index);
+		self.header_index = Some(new_header_index);
 
 		Ok(self)
 	}

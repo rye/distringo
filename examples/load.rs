@@ -51,7 +51,7 @@ fn main() -> distringo::error::Result<()> {
 		])
 	);
 
-	let logrecno = ds.get_logical_record_number_for_geoid("181570106002003")?;
+	let logrecno = ds.get_logical_record_number_for_geoid("181570052001013")?;
 
 	assert_eq!(logrecno, 0335180);
 
