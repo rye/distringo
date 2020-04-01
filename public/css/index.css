@@ -12,3 +12,37 @@ div.distringo-controls.collapsed {
 div.selecting .leaflet-interactive {
 	cursor: cell !important;
 }
+
+
+#container.in-session {
+	height: 100%;
+}
+
+#container.session-selection {
+	height: 100%;
+	display: grid;
+	grid-template-columns: 1fr [content-start] 768px [content-end] 1fr;
+	grid-template-rows: 1fr [content-start] 50vh [content-end] 1fr;
+}
+
+#container.session-selection > div.session-menu {
+	background-color: #ffffff;
+
+	font-family: "Overpass";
+
+	grid-column-start: content-start;
+	grid-column-end: content-end;
+
+	grid-row-start: content-start;
+	grid-row-end: content-end;
+
+	padding: 8pt;
+	border-radius: 4pt;
+	border: 1pt solid #8c8c8c;
+}
+
+div.session-menu > h1 {
+	text-align: center;
+	padding: 0;
+	margin: 1em 0 0 0;
+}
