@@ -1,13 +1,58 @@
 use config::Config;
 use hyper::StatusCode;
 use log::warn;
+use std::collections::HashMap;
 
 use std::net::IpAddr;
 use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct Session {
+	id: String,
+	name: String,
+}
+
+fn sessions(config: &config::Config) -> hyper::Response<String> {
+	let sessions: Vec<Session> = config
+		.get_table("sessions")
+		.map(|values: HashMap<String, config::Value>| {
+			values
+				.iter()
+				.map(|(id, value)| -> Session {
+					let id: String = id.to_string();
+					let name: String = value
+						.clone()
+						.into_table()
+						.expect("couldn't convert value to table")
+						.get("name")
+						.map(|v| v.clone().into_str().expect("couldn't convert into str"))
+						.unwrap_or("[no name]".to_string());
+
+					Session { id, name }
+				})
+				.collect()
+		})
+		.expect("couldn't read sessions");
+
+	hyper::Response::builder()
+		.status(StatusCode::OK)
+		.body(serde_json::to_string(&sessions).expect("couldn't serialize list of sessions"))
+		.expect("blep")
+}
+
+fn api_v0(config: &config::Config) -> warp::filters::BoxedFilter<(impl Reply,)> {
+	let config: config::Config = config.clone();
+
+	let sessions = warp::path!("sessions").map(move || sessions(&config));
+
+	warp::path!("api" / "v0" / ..).and(sessions).boxed()
+}
+
+fn routes(config: config::Config) -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
 	// GET / => (fs ./public/index.html)
 	let slash = warp::get()
 		.and(warp::path::end())
@@ -20,7 +65,7 @@ fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
 
 	// Compose the routes together.
 	warp::any()
-		.and(warp::get().and(slash.or(public_files)))
+		.and(warp::get().and(slash.or(public_files).or(api_v0(&config))))
 		.with(warp::log("distringo"))
 		.recover(handle_rejection)
 }
@@ -57,7 +102,7 @@ async fn main() -> distringo::error::Result<()> {
 		SocketAddr::new(host, port)
 	};
 
-	warp::serve(routes()).run(socket).await;
+	warp::serve(routes(settings)).run(socket).await;
 
 	Ok(())
 }
