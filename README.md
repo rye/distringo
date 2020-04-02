@@ -1,6 +1,11 @@
 # `distringo`
 
-Distringo is (going to be) a redistricting PWA.
+Distringo is (going to be) a redistricting application.
+
+## Why?
+
+Existing solutions for providing an interface for redistricting are either expensive or poorly-implemented.
+Distringo aims to provide an option that makes no compromises on performance.
 
 More to come later.
 
