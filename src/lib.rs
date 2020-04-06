@@ -59,7 +59,7 @@ pub mod census2010 {
 					impl $type {
 						#[allow(dead_code)]
 						fn $getter_name(&self) -> &str {
-							&self.$data_field_name[$loc]
+							&self.$data_field_name[$name]
 						}
 					}
 				)+
@@ -72,7 +72,7 @@ pub mod census2010 {
 					impl $type {
 						#[allow(dead_code)]
 						$vis fn $getter_name(&self) -> &str {
-							&self.$data_field_name[$loc]
+							&self.$data_field_name[$name]
 						}
 					}
 				)+
