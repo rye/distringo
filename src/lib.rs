@@ -1,8 +1,11 @@
 use crate::error::Result;
 use regex::Regex;
+#[cfg(feature = "fx-hash")]
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+#[cfg(not(feature = "fx-hash"))]
 use std::collections::HashMap;
-use std::collections::{BTreeMap, BTreeSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -12,6 +15,9 @@ pub mod error;
 pub type LogicalRecordNumber = u64;
 pub type GeoId = String;
 
+#[cfg(feature = "fx-hash")]
+pub(crate) type LogicalRecordPositionIndex = FxHashMap<LogicalRecordNumber, u64>;
+#[cfg(not(feature = "fx-hash"))]
 pub(crate) type LogicalRecordPositionIndex = HashMap<LogicalRecordNumber, u64>;
 
 /// A Logical Record
@@ -37,6 +43,9 @@ pub trait Dataset<LogicalRecord> {
 
 pub struct FileBackedLogicalRecord {
 	number: LogicalRecordNumber,
+	#[cfg(feature = "fx-hash")]
+	records: FxHashMap<usize, csv::StringRecord>,
+	#[cfg(not(feature = "fx-hash"))]
 	records: HashMap<usize, csv::StringRecord>,
 }
 
@@ -50,13 +59,15 @@ impl FileBackedLogicalRecord {
 	fn new(number: LogicalRecordNumber) -> Self {
 		Self {
 			number,
-			records: HashMap::new(),
+			#[cfg(feature = "fx-hash")]
+			records: FxHashMap::default(),
+			#[cfg(not(feature = "fx-hash"))]
+			records: HashMap::default(),
 		}
 	}
 
 	fn records(mut self, records: BTreeMap<usize, csv::StringRecord>) -> Self {
 		self.records.extend(records);
-
 		self
 	}
 }
@@ -147,11 +158,20 @@ pub struct IndexedDataset {
 	schema: Option<Schema>,
 	header_index: Option<GeographicalHeaderIndex>,
 	logical_record_index: Option<LogicalRecordIndex>,
+	#[cfg(feature = "fx-hash")]
+	tables: FxHashMap<Schema, TableLocations>,
+	#[cfg(not(feature = "fx-hash"))]
 	tables: HashMap<Schema, TableLocations>,
+	#[cfg(feature = "fx-hash")]
+	files: FxHashMap<FileType, File>,
+	#[cfg(not(feature = "fx-hash"))]
 	files: HashMap<FileType, File>,
 }
 
 pub(crate) type GeographicalHeaderIndex = BTreeMap<GeoId, (LogicalRecordNumber, u64)>;
+#[cfg(feature = "fx-hash")]
+pub(crate) type LogicalRecordIndex = FxHashMap<FileType, LogicalRecordPositionIndex>;
+#[cfg(not(feature = "fx-hash"))]
 pub(crate) type LogicalRecordIndex = HashMap<FileType, LogicalRecordPositionIndex>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -269,8 +289,14 @@ impl Default for IndexedDataset {
 			logical_record_index: None,
 			header_index: None,
 			schema: None,
-			tables: HashMap::new(),
-			files: HashMap::new(),
+			#[cfg(feature = "fx-hash")]
+			tables: FxHashMap::default(),
+			#[cfg(not(feature = "fx-hash"))]
+			tables: HashMap::default(),
+			#[cfg(feature = "fx-hash")]
+			files: FxHashMap::default(),
+			#[cfg(not(feature = "fx-hash"))]
+			files: HashMap::default(),
 		}
 	}
 }
@@ -457,7 +483,10 @@ impl IndexedDataset {
 		}
 
 		// Next, set up the references for data segmentation information
-		let mut current_column_numbers: HashMap<usize, usize> = HashMap::new();
+		#[cfg(feature = "fx-hash")]
+		let mut current_column_numbers: FxHashMap<usize, usize> = FxHashMap::default();
+		#[cfg(not(feature = "fx-hash"))]
+		let mut current_column_numbers: HashMap<usize, usize> = HashMap::default();
 
 		for line in &lines {
 			if let Line::DataSegmentationInformation(table_name, table_location) = line {
@@ -543,7 +572,7 @@ impl IndexedDataset {
 		assert!(self.logical_record_index.is_none());
 
 		let mut new_header_index = GeographicalHeaderIndex::new();
-		let mut new_logical_record_index = LogicalRecordIndex::new();
+		let mut new_logical_record_index = LogicalRecordIndex::default();
 
 		log::debug!("Indexing tabular files...");
 
@@ -556,7 +585,10 @@ impl IndexedDataset {
 					let mut file_reader = csv::ReaderBuilder::new()
 						.has_headers(false)
 						.from_reader(file_reader);
-					let mut index = HashMap::new();
+					#[cfg(feature = "fx-hash")]
+					let mut index = FxHashMap::default();
+					#[cfg(not(feature = "fx-hash"))]
+					let mut index = HashMap::default();
 
 					log::trace!("Creating index...");
 
