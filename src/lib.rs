@@ -20,7 +20,7 @@ pub trait Dataset<LogicalRecord> {
 	fn get_logical_record(
 		&self,
 		number: LogicalRecordNumber,
-		schemas: Vec<crate::Schema>,
+		tables: Vec<&str>,
 	) -> Result<LogicalRecord>;
 
 	/// Retrieve the logical record corresponding to GeoID `id`
@@ -42,6 +42,20 @@ pub mod census2010;
 #[non_exhaustive]
 pub enum Schema {
 	Census2010Pl94_171(Option<census2010::pl94_171::Table>),
+}
+
+impl<S: AsRef<str>> core::convert::From<S> for Schema {
+	fn from(s: S) -> Self {
+		let s: &str = s.as_ref();
+		match s {
+			"P1" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P1)),
+			"P2" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P2)),
+			"P3" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P3)),
+			"P4" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P4)),
+			"H1" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::H1)),
+			_ => unimplemented!(),
+		}
+	}
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -106,12 +120,13 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 	fn get_logical_record(
 		&self,
 		logical_record_number: LogicalRecordNumber,
-		requested_schemas: Vec<Schema>,
+		tables: Vec<&str>,
 	) -> Result<csv::StringRecord> {
-		log::debug!("Requesting {:?}", requested_schemas);
+		log::debug!("Requesting {:?}", tables);
 
-		let ranges: Vec<(FileType, &File, core::ops::Range<usize>)> = requested_schemas.iter().map(|schema| -> (Schema, TableLocations) {
-			(*schema, self.tables.get(schema).unwrap().clone())
+		let ranges: Vec<(FileType, &File, core::ops::Range<usize>)> = tables.iter().map(|table| -> (Schema, TableLocations) {
+			let schema: crate::Schema = table.into();
+			(schema, self.tables.get(&schema).unwrap().clone())
 		}).flat_map(|(schema, locations)| -> Vec<(FileType, &File, core::ops::Range<usize>)> {
 			locations.iter().map(|location: &TableSegmentLocation| -> (usize, core::ops::Range<usize>) {
 				(location.file, location.range.clone())
