@@ -60,7 +60,7 @@ pub mod census2010 {
 		pub use FileType::Tabular;
 
 		macro_rules! generate_field_getter {
-			($container_type:ty, $container_data_field:ident, $name:ident, [$vis:vis $getter_name:ident -> $pty:ty]) => {
+			($container_type:ty, $container_data_field:ident, $name:ident, [$vis:vis $getter_name:ident #> $pty:ty]) => {
 				#[allow(dead_code)]
 				impl $container_type {
 					#[must_use]
@@ -99,7 +99,7 @@ pub mod census2010 {
 			GEOCOMP @ { 11..13 } - [pub geocomp],
 			CHARITER @ { 13..16 } - [pub chariter],
 			CIFSN @ { 16..18 } - [pub cifsn],
-			LOGRECNO @ { 18..25 } - [pub logrecno -> crate::LogicalRecordNumber],
+			LOGRECNO @ { 18..25 } - [pub logrecno #> crate::LogicalRecordNumber],
 			REGION @ { 25..26 } - [pub region],
 			DIVISION @ { 26..27 } - [pub division],
 			STATE @ { 27..29 } - [pub state],
