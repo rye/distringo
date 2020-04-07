@@ -16,10 +16,10 @@ pub(crate) struct LogicalRecordPositionIndex {
 	inner: Vec<u64>,
 }
 
-impl Default for LogicalRecordPositionIndex {
-	fn default() -> Self {
+impl LogicalRecordPositionIndex {
+	fn new_with_size(size: usize) -> Self {
 		Self {
-			inner: Vec::with_capacity(1000000_usize),
+			inner: Vec::with_capacity(size),
 		}
 	}
 }
@@ -582,7 +582,7 @@ impl IndexedDataset {
 						.has_headers(false)
 						.from_reader(file_reader);
 
-					let mut index = LogicalRecordPositionIndex::default();
+					let mut index = LogicalRecordPositionIndex::new_with_size(1_250_000);
 
 					log::trace!("Reading records");
 
