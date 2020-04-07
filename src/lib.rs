@@ -14,6 +14,15 @@ pub type GeoId = String;
 
 pub(crate) type LogicalRecordPositionIndex = HashMap<LogicalRecordNumber, u64>;
 
+/// A Logical Record
+pub trait LogicalRecord {
+	/// Get the corresponding number
+	///
+	/// The Census refers to records by their "logical number."  A logical record
+	/// is assumed _only_ to have this number.
+	fn number(&self) -> LogicalRecordNumber;
+}
+
 /// A trait containing behavior expected for datasets
 pub trait Dataset<LogicalRecord> {
 	/// Retrieve the logical record with number `number`
