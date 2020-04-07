@@ -13,7 +13,7 @@ pub type LogicalRecordNumber = u64;
 pub type GeoId = String;
 
 pub(crate) struct LogicalRecordPositionIndex {
-	inner: Vec<u64>,
+	inner: Vec<Option<u64>>,
 }
 
 impl LogicalRecordPositionIndex {
@@ -27,14 +27,14 @@ impl LogicalRecordPositionIndex {
 impl LogicalRecordPositionIndex {
 	fn insert(&mut self, logrecno: LogicalRecordNumber, offset: u64) {
 		let idx: usize = logrecno as usize;
-		self.inner.resize(idx + 1, 0);
-		self.inner[idx] = offset;
+		self.inner.resize(idx + 1, None);
+		self.inner[idx] = Some(offset);
 	}
 }
 
 impl core::ops::Index<LogicalRecordNumber> for LogicalRecordPositionIndex {
-	type Output = u64;
-	fn index(&self, logrecno: LogicalRecordNumber) -> &u64 {
+	type Output = Option<u64>;
+	fn index(&self, logrecno: LogicalRecordNumber) -> &Option<u64> {
 		&self.inner[logrecno as usize]
 	}
 }
@@ -208,7 +208,8 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 					.filter(|(file_type, _)| file_type.is_tabular())
 					.map(|(fty, file)| -> (usize, csv::StringRecord) {
 						let corresponding_logrec_position_index = index.get(&fty).unwrap();
-						let offset: u64 = corresponding_logrec_position_index[number];
+						let offset: u64 =
+							corresponding_logrec_position_index[number].expect("should have position for record");
 
 						use std::io::Seek;
 						let mut reader = BufReader::new(file);
