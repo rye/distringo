@@ -33,6 +33,7 @@ pub trait Dataset<LogicalRecord> {
 /// A geographical header
 pub trait GeographicalHeader {
 	fn name(&self) -> &str;
+	fn logrecno(&self) -> LogicalRecordNumber;
 }
 
 pub mod census2010 {
@@ -208,6 +209,10 @@ pub mod census2010 {
 		impl crate::GeographicalHeader for GeographicalHeader {
 			fn name(&self) -> &str {
 				&self.name()
+			}
+
+			fn logrecno(&self) -> crate::LogicalRecordNumber {
+				self.logrecno()
 			}
 		}
 	}
