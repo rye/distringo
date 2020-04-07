@@ -220,12 +220,12 @@ version = "0.1.0"
 dependencies = [
  "config",
  "csv",
+ "fnv",
  "hyper",
  "lazy_static",
  "log 0.4.8",
  "pretty_env_logger",
  "regex",
- "rustc-hash",
  "serde",
  "serde_yaml",
  "simple_logger",
@@ -1059,12 +1059,6 @@ checksum = "4a83fa3702a688b9359eccba92d153ac33fd2e8462f9e0e3fdf155239ea7792e"
 dependencies = [
  "winapi 0.3.8",
 ]
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc_version"
