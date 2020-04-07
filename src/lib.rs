@@ -281,6 +281,20 @@ impl IndexedDataset {
 		}
 	}
 
+	/// Load the dataset according to the packing list
+	///
+	/// # Panics
+	///
+	/// - Panics if the cache of tables is not empty
+	/// - Panics if the cache of files is not empty
+	/// - Panics if the specified file could not be opened for reading
+	/// - Panics if at any point while reading a line cannot be parsed to a String (i.e. contains invalid Utf8)
+	/// - Panics if the packing list contains Data Segmentation Information containing a table location specifier that cannot be split on `:` into at least two groups
+	/// - Panics if the packing list contains Data Segmentation Information containing a table location specifier whose file number cannot be parsed as `usize`
+	/// - Panics if the packing list contains Data Segmentation Information containing a table location specifier whose width cannot be parsed as `usize`
+	/// - Panics if the packing list contains File Information whose year component and extension are not recognized
+	/// - Panics if a line matches the Data Segmentation Information regular expression but does not have one of the required capture groups
+	/// - Panics if a line matches the File Information regular expression but does not have one of the required capture groups
 	pub fn unpack<P: core::fmt::Display + AsRef<Path>>(mut self, path: P) -> Result<Self> {
 		assert!(self.tables.is_empty());
 		assert!(self.files.is_empty());
