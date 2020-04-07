@@ -48,11 +48,11 @@ impl<S: AsRef<str>> core::convert::From<S> for Schema {
 	fn from(s: S) -> Self {
 		let s: &str = s.as_ref();
 		match s {
-			"P1" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P1)),
-			"P2" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P2)),
-			"P3" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P3)),
-			"P4" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::P4)),
-			"H1" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::Table::H1)),
+			"p1" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::P1)),
+			"p2" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::P2)),
+			"p3" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::P3)),
+			"p4" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::P4)),
+			"h1" => Schema::Census2010Pl94_171(Some(census2010::pl94_171::H1)),
 			_ => unimplemented!(),
 		}
 	}
