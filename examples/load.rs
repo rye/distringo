@@ -56,8 +56,9 @@ fn main() -> distringo::error::Result<()> {
 	assert_eq!(logrecno, 0335180);
 
 	let header = ds.get_header_for_geoid("181570052001013")?;
-
 	println!("{}", header.name());
+
+	assert_eq!(header.logrecno(), 0335180);
 
 	Ok(())
 }
