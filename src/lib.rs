@@ -22,9 +22,7 @@ impl LogicalRecordPositionIndex {
 			inner: Vec::with_capacity(size),
 		}
 	}
-}
 
-impl LogicalRecordPositionIndex {
 	fn insert(&mut self, logrecno: LogicalRecordNumber, offset: u64) {
 		let idx: usize = logrecno as usize;
 		self.inner.resize(idx + 1, None);
