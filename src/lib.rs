@@ -1,8 +1,8 @@
 use crate::error::Result;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -26,17 +26,39 @@ pub trait LogicalRecord {
 /// A trait containing behavior expected for datasets
 pub trait Dataset<LogicalRecord> {
 	/// Retrieve the logical record with number `number`
-	fn get_logical_record(
-		&self,
-		number: LogicalRecordNumber,
-		tables: Vec<&str>,
-	) -> Result<LogicalRecord>;
+	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<LogicalRecord>;
 
 	/// Retrieve the logical record corresponding to GeoID `id`
 	fn get_logical_record_number_for_geoid(&self, geoid: &str) -> Result<LogicalRecordNumber>;
 
 	/// Retrieve the GeographicalHeader
 	fn get_header_for_geoid(&self, geoid: &str) -> Result<Box<dyn GeographicalHeader>>;
+}
+
+pub struct FileBackedLogicalRecord {
+	number: LogicalRecordNumber,
+	records: HashMap<usize, csv::StringRecord>,
+}
+
+impl LogicalRecord for FileBackedLogicalRecord {
+	fn number(&self) -> LogicalRecordNumber {
+		self.number
+	}
+}
+
+impl FileBackedLogicalRecord {
+	fn new(number: LogicalRecordNumber) -> Self {
+		Self {
+			number,
+			records: HashMap::new(),
+		}
+	}
+
+	fn records(mut self, records: BTreeMap<usize, csv::StringRecord>) -> Self {
+		self.records.extend(records);
+
+		self
+	}
 }
 
 /// A geographical header
@@ -67,10 +89,33 @@ impl<S: AsRef<str>> core::convert::From<S> for Schema {
 	}
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub(crate) enum FileType {
 	Census2010Pl94_171(census2010::pl94_171::FileType),
+}
+
+impl FileType {
+	fn is_header(&self) -> bool {
+		match self {
+			Self::Census2010Pl94_171(census2010::pl94_171::FileType::GeographicalHeader) => true,
+			_ => false,
+		}
+	}
+
+	fn is_tabular(&self) -> bool {
+		match self {
+			Self::Census2010Pl94_171(census2010::pl94_171::FileType::Tabular(_)) => true,
+			_ => false,
+		}
+	}
+
+	fn tabular_index(&self) -> Option<usize> {
+		match self {
+			Self::Census2010Pl94_171(census2010::pl94_171::FileType::Tabular(n)) => Some(*n),
+			_ => None,
+		}
+	}
 }
 
 #[cfg(test)]
@@ -125,49 +170,20 @@ pub type TableName = String;
 pub type TableLocationSpecifier = Vec<TableSegmentSpecifier>;
 pub type TableLocations = Vec<TableSegmentLocation>;
 
-impl Dataset<csv::StringRecord> for IndexedDataset {
-	fn get_logical_record(
-		&self,
-		logical_record_number: LogicalRecordNumber,
-		tables: Vec<&str>,
-	) -> Result<csv::StringRecord> {
-		log::debug!("Requesting {:?}", tables);
-
-		let ranges: Vec<(FileType, &File, core::ops::Range<usize>)> = tables.iter().map(|table| -> (Schema, TableLocations) {
-			let schema: crate::Schema = table.into();
-			(schema, self.tables.get(&schema).unwrap().clone())
-		}).flat_map(|(schema, locations)| -> Vec<(FileType, &File, core::ops::Range<usize>)> {
-			locations.iter().map(|location: &TableSegmentLocation| -> (usize, core::ops::Range<usize>) {
-				(location.file, location.range.clone())
-			}).map(|(file_number, columns): (usize, core::ops::Range<usize>)| -> (FileType, core::ops::Range<usize>) {
-				(match schema {
-					Schema::Census2010Pl94_171(Some(_)) => FileType::Census2010Pl94_171(census2010::pl94_171::Tabular(file_number)),
-					_ => unimplemented!(),
-				}, columns)
-			})
-			.map(|(fty, columns)| -> (FileType, &File, core::ops::Range<usize>) {
-				(fty, self.files.get(&fty).unwrap(), columns)
-			}).collect()
-		})
-		.collect();
+impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
+	/// Retrieve the logical record by number and by table
+	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<FileBackedLogicalRecord> {
+		log::debug!("Getting logical record {}", number);
 
 		match &self.logical_record_index {
 			Some(index) => {
-				let ftys: std::collections::HashSet<FileType> = ranges
+				let records_from_file: BTreeMap<usize, csv::StringRecord> = self
+					.files
 					.iter()
-					.map(|(fty, _, _)| -> FileType { *fty })
-					.collect();
-
-				// TODO leave as iter
-				let records_from_file: HashMap<FileType, csv::StringRecord> = ftys
-					.iter()
-					.map(|fty| -> (FileType, csv::StringRecord) {
-						let file: &File = self.files.get(fty).unwrap();
-
+					.filter(|(file_type, _)| file_type.is_tabular())
+					.map(|(fty, file)| -> (usize, csv::StringRecord) {
 						let corresponding_logrec_position_index = index.get(&fty).unwrap();
-						let offset: &u64 = corresponding_logrec_position_index
-							.get(&logical_record_number)
-							.unwrap();
+						let offset: &u64 = corresponding_logrec_position_index.get(&number).unwrap();
 
 						use std::io::Seek;
 						let mut reader = BufReader::new(file);
@@ -183,30 +199,17 @@ impl Dataset<csv::StringRecord> for IndexedDataset {
 							.read_record(&mut record)
 							.expect("couldn't read record");
 
-						debug_assert!(
-							record[4].parse::<LogicalRecordNumber>().unwrap() == logical_record_number
-						);
+						debug_assert!(record[4].parse::<LogicalRecordNumber>().unwrap() == number);
 
-						(*fty, record)
+						(fty.tabular_index().expect("fty is tabular"), record)
 					})
 					.collect();
 
 				log::debug!("Read records: {:?}", records_from_file);
 
-				let mut record: Vec<String> = Vec::new();
+				let record = FileBackedLogicalRecord::new(number).records(records_from_file);
 
-				ranges
-					.iter()
-					.map(|(fty, _, cols)| -> Vec<String> {
-						let record: &csv::StringRecord = records_from_file.get(&fty).unwrap();
-						let cols: core::ops::Range<usize> = cols.clone();
-						cols
-							.map(|col: usize| -> String { record[col].to_string() })
-							.collect()
-					})
-					.for_each(|mut table_chunk| record.append(&mut table_chunk));
-
-				Ok(csv::StringRecord::from(record))
+				Ok(record)
 			}
 
 			None => unimplemented!(),

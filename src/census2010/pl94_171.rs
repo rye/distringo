@@ -11,7 +11,7 @@ pub enum Table {
 
 pub use Table::{H1, P1, P2, P3, P4};
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FileType {
 	Tabular(usize),
 	GeographicalHeader,
