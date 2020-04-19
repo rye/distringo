@@ -13,3 +13,6 @@ pub trait Dataset<LogicalRecord> {
 	/// Retrieve the GeographicalHeader
 	fn get_header_for_geoid(&self, geoid: &str) -> Result<Box<dyn GeographicalHeader>>;
 }
+
+mod indexed;
+pub use indexed::*;
