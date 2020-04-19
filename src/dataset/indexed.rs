@@ -43,8 +43,6 @@ pub struct IndexedDataset {
 impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 	/// Retrieve the logical record by number and by table
 	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<FileBackedLogicalRecord> {
-		// log::debug!("Getting logical record {}", number);
-
 		match &self.logical_record_index {
 			Some(index) => {
 				let records_from_file: BTreeMap<usize, csv::StringRecord> = self
@@ -53,14 +51,14 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 					.filter(|(file_type, _)| file_type.is_tabular())
 					.map(|(fty, file)| -> (usize, csv::StringRecord) {
 						let corresponding_logrec_position_index = index.get(&fty).unwrap();
-						let offset: u64 =
-							corresponding_logrec_position_index[number].expect("should have position for record");
+						let offset: u64 = corresponding_logrec_position_index[number]
+							.expect("failed to find position for record");
 
 						use std::io::Seek;
 						let mut reader = BufReader::new(file);
 						reader
 							.seek(std::io::SeekFrom::Start(offset))
-							.expect("couldn't seek to record");
+							.expect("failed to seek to position for record");
 
 						let mut reader = csv::ReaderBuilder::new()
 							.has_headers(false)
@@ -68,9 +66,7 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 						let mut record = csv::StringRecord::new();
 						reader
 							.read_record(&mut record)
-							.expect("couldn't read record");
-
-						// debug_assert!(record[4].parse::<LogicalRecordNumber>().unwrap() == number);
+							.expect("failed to read record");
 
 						(fty.tabular_index().expect("fty is tabular"), record)
 					})
