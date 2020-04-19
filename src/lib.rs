@@ -99,7 +99,7 @@ impl<S: AsRef<str>> core::convert::From<S> for Schema {
 	}
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub(crate) enum FileType {
 	Census2010Pl94_171(census2010::pl94_171::FileType),
