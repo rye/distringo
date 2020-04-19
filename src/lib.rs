@@ -370,7 +370,6 @@ impl IndexedDataset {
 							.split(' ')
 							.map(|chunk| -> TableSegmentSpecifier {
 								let split: Vec<&str> = chunk.split(':').collect();
-								log::trace!("{:?}, {:?}", captures, split);
 								let file = split[0].parse().expect("couldn't parse file idx");
 								let columns = split[1].parse().expect("couldn't parse width");
 								TableSegmentSpecifier { file, columns }
