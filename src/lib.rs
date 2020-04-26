@@ -61,6 +61,7 @@ pub use schema::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
+#[deprecated]
 pub(crate) enum FileType {
 	Census2010Pl94_171(census2010::pl94_171::FileType),
 }
