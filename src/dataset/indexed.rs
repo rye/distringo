@@ -1,31 +1,30 @@
-use super::Dataset;
-use crate::error::Result;
-use crate::FileBackedLogicalRecord;
-use crate::FileType;
-use crate::GeoId;
-use crate::GeographicalHeader;
-use crate::LogicalRecordNumber;
-use crate::LogicalRecordPositionIndex;
-use crate::Schema;
-use crate::TableLocationSpecifier;
-use crate::TableName;
-use crate::TableSegmentLocation;
-use crate::TableSegmentSpecifier;
-use regex::Regex;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::census2010;
-use crate::GeographicalHeaderIndex;
+use super::Dataset;
 
+use crate::census2010;
+use crate::error::Result;
+use crate::FileBackedLogicalRecord;
+use crate::FileType;
+use crate::GeoId;
+use crate::GeographicalHeader;
+use crate::GeographicalHeaderIndex;
 use crate::LogicalRecordIndex;
+use crate::LogicalRecordNumber;
+use crate::LogicalRecordPositionIndex;
+use crate::Schema;
+use crate::TableLocationSpecifier;
+use crate::TableLocations;
+use crate::TableName;
+use crate::TableSegmentLocation;
+use crate::TableSegmentSpecifier;
 
 use fnv::FnvHashMap;
-
-use crate::TableLocations;
+use regex::Regex;
 
 /// A Census Dataset
 ///
