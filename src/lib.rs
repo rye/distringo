@@ -2,7 +2,8 @@ use fnv::FnvHashMap;
 
 use std::collections::BTreeMap;
 
-pub mod error;
+mod error;
+pub use error::*;
 
 pub type LogicalRecordNumber = u64;
 pub type GeoId = String;

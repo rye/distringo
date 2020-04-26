@@ -3,7 +3,7 @@ use distringo::Dataset;
 /// Simple loading example
 ///
 /// Reads a packing list from
-fn main() -> distringo::error::Result<()> {
+fn main() -> distringo::Result<()> {
 	simple_logger::init_with_level(log::Level::Trace).unwrap();
 
 	let ds = distringo::IndexedDataset::new("in2010-pl94_171")
