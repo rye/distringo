@@ -7,30 +7,8 @@ pub mod error;
 pub type LogicalRecordNumber = u64;
 pub type GeoId = String;
 
-pub(crate) struct LogicalRecordPositionIndex {
-	inner: Vec<Option<u64>>,
-}
-
-impl LogicalRecordPositionIndex {
-	fn new_with_size(size: usize) -> Self {
-		Self {
-			inner: Vec::with_capacity(size),
-		}
-	}
-
-	fn insert(&mut self, logrecno: LogicalRecordNumber, offset: u64) {
-		let idx: usize = logrecno as usize;
-		self.inner.resize(idx + 1, None);
-		self.inner[idx] = Some(offset);
-	}
-}
-
-impl core::ops::Index<LogicalRecordNumber> for LogicalRecordPositionIndex {
-	type Output = Option<u64>;
-	fn index(&self, logrecno: LogicalRecordNumber) -> &Option<u64> {
-		&self.inner[logrecno as usize]
-	}
-}
+mod index;
+pub use index::*;
 
 /// A Logical Record
 pub trait LogicalRecord {
