@@ -138,6 +138,64 @@ lazy_static::lazy_static! {
 			.expect("couldn't parse regex");
 }
 
+#[derive(Clone, Debug, PartialEq)]
+enum Line {
+	DataSegmentationInformation(TableName, TableLocationSpecifier),
+	FileInformation(PathBuf, Schema, String),
+}
+
+impl core::convert::TryFrom<regex::Captures<'_>> for Line {
+	type Error = crate::error::Error;
+
+	fn try_from(captures: regex::Captures) -> crate::error::Result<Self> {
+		match (
+			captures.name("table"),
+			captures.name("loc"),
+			captures.name("filename"),
+			captures.name("ident"),
+			captures.name("year"),
+			captures.name("ds"),
+		) {
+			(Some(table_name), Some(table_locations), None, None, None, None) => {
+				let table_name = table_name.as_str().to_string();
+
+				let table_locations: Vec<TableSegmentSpecifier> = table_locations
+					.as_str()
+					.split(' ')
+					.map(|chunk| -> TableSegmentSpecifier {
+						let split: Vec<&str> = chunk.split(':').collect();
+						let file = split[0].parse().expect("couldn't parse file idx");
+						let columns = split[1].parse().expect("couldn't parse width");
+						TableSegmentSpecifier { file, columns }
+					})
+					.collect();
+
+				Ok(Line::DataSegmentationInformation(
+					table_name,
+					table_locations,
+				))
+			}
+
+			(None, None, Some(filename), Some(ident), Some(year), Some(ds)) => {
+				let filename: PathBuf = filename.as_str().into();
+
+				let schema: Schema = match (year.as_str(), ds.as_str()) {
+					("2010", "pl") => Schema::Census2010Pl94_171(None),
+					_ => unimplemented!(),
+				};
+
+				Ok(Line::FileInformation(
+					filename,
+					schema,
+					ident.as_str().to_string(),
+				))
+			}
+
+			(_, _, _, _, _, _) => panic!("unexpected capture grouping"),
+		}
+	}
+}
+
 impl IndexedDataset {
 	pub fn new<S: Into<String>>(s: S) -> Self {
 		Self {
@@ -172,64 +230,6 @@ impl IndexedDataset {
 		log::debug!("Successfully opened {}", &path);
 
 		// Stream -> Data
-
-		#[derive(Clone, Debug, PartialEq)]
-		enum Line {
-			DataSegmentationInformation(TableName, TableLocationSpecifier),
-			FileInformation(PathBuf, Schema, String),
-		}
-
-		impl core::convert::TryFrom<regex::Captures<'_>> for Line {
-			type Error = crate::error::Error;
-
-			fn try_from(captures: regex::Captures) -> crate::error::Result<Self> {
-				match (
-					captures.name("table"),
-					captures.name("loc"),
-					captures.name("filename"),
-					captures.name("ident"),
-					captures.name("year"),
-					captures.name("ds"),
-				) {
-					(Some(table_name), Some(table_locations), None, None, None, None) => {
-						let table_name = table_name.as_str().to_string();
-
-						let table_locations: Vec<TableSegmentSpecifier> = table_locations
-							.as_str()
-							.split(' ')
-							.map(|chunk| -> TableSegmentSpecifier {
-								let split: Vec<&str> = chunk.split(':').collect();
-								let file = split[0].parse().expect("couldn't parse file idx");
-								let columns = split[1].parse().expect("couldn't parse width");
-								TableSegmentSpecifier { file, columns }
-							})
-							.collect();
-
-						Ok(Line::DataSegmentationInformation(
-							table_name,
-							table_locations,
-						))
-					}
-
-					(None, None, Some(filename), Some(ident), Some(year), Some(ds)) => {
-						let filename: PathBuf = filename.as_str().into();
-
-						let schema: Schema = match (year.as_str(), ds.as_str()) {
-							("2010", "pl") => Schema::Census2010Pl94_171(None),
-							_ => unimplemented!(),
-						};
-
-						Ok(Line::FileInformation(
-							filename,
-							schema,
-							ident.as_str().to_string(),
-						))
-					}
-
-					(_, _, _, _, _, _) => panic!("unexpected capture grouping"),
-				}
-			}
-		}
 
 		log::debug!("Parsing packing list information from {}", &path);
 
