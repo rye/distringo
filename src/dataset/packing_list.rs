@@ -269,7 +269,7 @@ impl core::str::FromStr for PackingList {
 					let locations: TableLocations = specs
 						.iter()
 						.map(|specifier| {
-							if !current_columns.get(&specifier.file).is_some() {
+							if current_columns.get(&specifier.file).is_none() {
 								current_columns.insert(specifier.file, 5_usize);
 							}
 
