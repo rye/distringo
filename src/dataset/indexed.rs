@@ -67,8 +67,6 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 					})
 					.collect();
 
-				// log::debug!("Read records: {:?}", records_from_file);
-
 				let record = FileBackedLogicalRecord::new(number).records(records_from_file);
 
 				Ok(record)
@@ -186,8 +184,6 @@ impl IndexedDataset {
 	}
 
 	pub fn index(mut self) -> Result<Self> {
-		assert!(self.logical_record_index.is_none());
-
 		let mut new_header_index = GeographicalHeaderIndex::new();
 		let mut new_logical_record_index = TabularLogicalRecordIndex::default();
 
