@@ -72,14 +72,25 @@ pub enum Table {
 
 impl core::str::FromStr for PackingList {
 	type Err = crate::error::Error;
+
 	fn from_str(s: &str) -> Result<Self> {
+		log::debug!("Parsing packing list (of {} bytes)", s.len());
+
 		// PHASE 0: Build the regex for the stusab
+
+		log::debug!("Parsing STUSAB field from packing list data");
 
 		let stusab: String = {
 			let stusab_all_caps: &str = &STUSAB_RE.captures(s).expect("failed to find STUSAB")["stusab"];
 			let stusab: String = stusab_all_caps.to_lowercase();
 			stusab
 		};
+
+		log::debug!("Inferred STUSAB: {}", stusab);
+
+		// PHASE 1: Collect the Schema
+
+		log::trace!("Compiling filename regex");
 
 		// TODO rather than building this regex at parse time, maybe store a lazy_static cache of these for each stusab somewhere?
 		let filename_re: Regex = Regex::new(&format!(
@@ -88,11 +99,18 @@ impl core::str::FromStr for PackingList {
 		))
 		.expect("failed to create generated regex");
 
-		// PHASE 1: Collect the Schema
+		log::trace!("Finished compiling filename regex");
+
+		log::debug!("Inferring schema");
 
 		let mut schemas: Vec<Schema> = filename_re
 			.captures_iter(s)
 			.map(|captures| {
+				log::trace!(
+					"Processing filename regex match: {}",
+					captures.get(0).unwrap().as_str()
+				);
+
 				let captures: (Option<&str>, Option<&str>, Option<&str>) = (
 					captures.name("inner").as_ref().map(regex::Match::as_str),
 					captures.name("year").as_ref().map(regex::Match::as_str),
@@ -106,11 +124,17 @@ impl core::str::FromStr for PackingList {
 			})
 			.collect();
 
+		log::trace!("Deduplicating {} schemas", schemas.len());
+
 		schemas.dedup();
+
+		log::trace!("Now have {} schema(s)", schemas.len());
 
 		assert_eq!(schemas.len(), 1);
 
 		let schema: Schema = schemas.remove(0);
+
+		log::debug!("Inferred schema: {:?}", schema);
 
 		// PHASE 2: Collect the file information
 
@@ -134,10 +158,17 @@ impl core::str::FromStr for PackingList {
 			ty: FileType,
 		}
 
+		log::debug!("Reading packing list content definitions");
+
 		let (tabular_files, geographical_header_file): (FnvHashMap<u32, PathBuf>, PathBuf) = {
 			let file_informations: Vec<FileInformation> = FILE_INFORMATION_RE_ML
 				.captures_iter(s)
 				.map(|captures| {
+					log::trace!(
+						"Processing file information regex match: {}",
+						captures.get(0).unwrap().as_str()
+					);
+
 					let (filename, date, size, rows): (&str, &str, &str, &str) = (
 						captures
 							.name("filename")
@@ -174,6 +205,9 @@ impl core::str::FromStr for PackingList {
 							}
 						}
 					};
+
+					log::trace!("Inferred filetype {:?} for {:?}", ty, filename);
+
 					FileInformation {
 						filename,
 						date,
@@ -202,6 +236,8 @@ impl core::str::FromStr for PackingList {
 
 		// PHASE 3: Calculate the table locations
 
+		log::debug!("Reading data segmentation specifiers");
+
 		// TODO consider just hard-coding the table locations in our spec
 
 		let table_locations: FnvHashMap<Table, TableLocations> = {
@@ -209,7 +245,12 @@ impl core::str::FromStr for PackingList {
 
 			TABLE_INFORMATION_RE_ML
 				.captures_iter(s)
-				.map(|captures| -> (&str, Vec<TableSegmentSpecifier>) {
+				.map(|captures| -> (Table, TableLocations) {
+					log::trace!(
+						"Processing table segmentation regex match: {}",
+						captures.get(0).unwrap().as_str()
+					);
+
 					let (name, specs): (&str, &str) = (
 						captures
 							.name("table")
@@ -223,52 +264,50 @@ impl core::str::FromStr for PackingList {
 					let specs: Vec<&str> = specs.split(' ').collect();
 					let specs: Vec<TableSegmentSpecifier> =
 						specs.iter().filter_map(|s| s.parse().ok()).collect();
-					(name, specs)
+
+					let table: Table = match (schema, name) {
+						(Schema::Census2010(census2010::Schema::Pl94_171), "p1") => {
+							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P1))
+						}
+						(Schema::Census2010(census2010::Schema::Pl94_171), "p2") => {
+							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P2))
+						}
+						(Schema::Census2010(census2010::Schema::Pl94_171), "p3") => {
+							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P3))
+						}
+						(Schema::Census2010(census2010::Schema::Pl94_171), "p4") => {
+							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P4))
+						}
+						(Schema::Census2010(census2010::Schema::Pl94_171), "h1") => {
+							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::H1))
+						}
+						(Schema::Census2010(census2010::Schema::Pl94_171), _) => unimplemented!(),
+						(_, _) => unimplemented!(),
+					};
+
+					let locations: TableLocations = specs
+						.iter()
+						.map(|specifier| {
+							if !current_columns.get(&specifier.file).is_some() {
+								current_columns.insert(specifier.file, 5_usize);
+							}
+
+							let start: usize = *current_columns.get(&specifier.file).unwrap();
+							let end: usize = start + specifier.columns;
+
+							current_columns.insert(specifier.file, end);
+
+							TableSegmentLocation {
+								file: specifier.file,
+								range: start..end,
+							}
+						})
+						.collect();
+
+					log::trace!("Table {:?} is found at {:?}", table, locations);
+
+					(table, locations)
 				})
-				.map(
-					|(name, specs): (&str, Vec<TableSegmentSpecifier>)| -> (Table, TableLocations) {
-						let table: Table = match (schema, name) {
-							(Schema::Census2010(census2010::Schema::Pl94_171), "p1") => {
-								Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P1))
-							}
-							(Schema::Census2010(census2010::Schema::Pl94_171), "p2") => {
-								Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P2))
-							}
-							(Schema::Census2010(census2010::Schema::Pl94_171), "p3") => {
-								Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P3))
-							}
-							(Schema::Census2010(census2010::Schema::Pl94_171), "p4") => {
-								Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P4))
-							}
-							(Schema::Census2010(census2010::Schema::Pl94_171), "h1") => {
-								Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::H1))
-							}
-							(Schema::Census2010(census2010::Schema::Pl94_171), _) => unimplemented!(),
-							(_, _) => unimplemented!(),
-						};
-
-						let locations: TableLocations = specs
-							.iter()
-							.map(|specifier| {
-								if !current_columns.get(&specifier.file).is_some() {
-									current_columns.insert(specifier.file, 5_usize);
-								}
-
-								let start: usize = *current_columns.get(&specifier.file).unwrap();
-								let end: usize = start + specifier.columns;
-
-								current_columns.insert(specifier.file, end);
-
-								TableSegmentLocation {
-									file: specifier.file,
-									range: start..end,
-								}
-							})
-							.collect();
-
-						(table, locations)
-					},
-				)
 				.collect()
 		};
 
@@ -641,6 +680,8 @@ impl IndexedDataset {
 
 		let file = File::open(&path).unwrap_or_else(|_| panic!("could not open {} for reading", &path));
 		let stream = BufReader::new(file);
+
+		let _packing_list: PackingList = PackingList::from_file(&path)?;
 
 		log::debug!("Successfully opened {}", &path);
 
