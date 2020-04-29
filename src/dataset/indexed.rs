@@ -16,7 +16,7 @@ use crate::GeographicalHeaderIndex;
 use crate::LogicalRecordIndex;
 use crate::LogicalRecordNumber;
 use crate::LogicalRecordPositionIndex;
-use crate::Schema;
+use crate::OldSchema;
 use crate::TableLocationSpecifier;
 use crate::TableLocations;
 use crate::TableName;
@@ -101,7 +101,7 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 			let line_offset = result.1;
 
 			let fty = match self.schema {
-				Some(Schema::Census2010Pl94_171(_)) => {
+				Some(OldSchema::Census2010Pl94_171(_)) => {
 					FileType::Census2010Pl94_171(crate::census2010::pl94_171::FileType::GeographicalHeader)
 				}
 				None => panic!("dataset has no schema"),
@@ -141,7 +141,7 @@ lazy_static::lazy_static! {
 #[derive(Clone, Debug, PartialEq)]
 enum Line {
 	DataSegmentationInformation(TableName, TableLocationSpecifier),
-	FileInformation(PathBuf, Schema, String),
+	FileInformation(PathBuf, OldSchema, String),
 }
 
 impl core::convert::TryFrom<regex::Captures<'_>> for Line {
@@ -179,8 +179,8 @@ impl core::convert::TryFrom<regex::Captures<'_>> for Line {
 			(None, None, Some(filename), Some(ident), Some(year), Some(ds)) => {
 				let filename: PathBuf = filename.as_str().into();
 
-				let schema: Schema = match (year.as_str(), ds.as_str()) {
-					("2010", "pl") => Schema::Census2010Pl94_171(None),
+				let schema: OldSchema = match (year.as_str(), ds.as_str()) {
+					("2010", "pl") => OldSchema::Census2010Pl94_171(None),
 					_ => unimplemented!(),
 				};
 
@@ -266,10 +266,10 @@ impl IndexedDataset {
 
 				// Parse the File Type and attempt to get close to the right spot
 				let file_type: FileType = match (schema, ident.as_str()) {
-					(Schema::Census2010Pl94_171(None), "geo") => {
+					(OldSchema::Census2010Pl94_171(None), "geo") => {
 						FileType::Census2010Pl94_171(census2010::pl94_171::FileType::GeographicalHeader)
 					}
-					(Schema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(
+					(OldSchema::Census2010Pl94_171(None), maybe_numeric) => FileType::Census2010Pl94_171(
 						census2010::pl94_171::Tabular(maybe_numeric.parse::<usize>().unwrap()),
 					),
 					_ => unimplemented!(),
@@ -279,7 +279,7 @@ impl IndexedDataset {
 
 				if self.schema.is_none() {
 					let dataset_schema = match file_type {
-						FileType::Census2010Pl94_171(_) => Schema::Census2010Pl94_171(None),
+						FileType::Census2010Pl94_171(_) => OldSchema::Census2010Pl94_171(None),
 					};
 
 					log::debug!("Inferred dataset schema of {:?}", dataset_schema);
@@ -309,32 +309,32 @@ impl IndexedDataset {
 		}
 
 		// Next, set up the references for data segmentation information
-		let mut current_column_numbers: FnvHashMap<usize, usize> = FnvHashMap::default();
+		let mut current_column_numbers: FnvHashMap<u32, usize> = FnvHashMap::default();
 
 		for line in &lines {
 			if let Line::DataSegmentationInformation(table_name, table_location) = line {
 				log::trace!("Processing Data Segmentation line: {:?}", line);
 
 				let schema = match (self.schema, table_name.as_str()) {
-					(Some(Schema::Census2010Pl94_171(None)), "p1") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P1))
+					(Some(OldSchema::Census2010Pl94_171(None)), "p1") => {
+						OldSchema::Census2010Pl94_171(Some(census2010::pl94_171::P1))
 					}
-					(Some(Schema::Census2010Pl94_171(None)), "p2") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P2))
+					(Some(OldSchema::Census2010Pl94_171(None)), "p2") => {
+						OldSchema::Census2010Pl94_171(Some(census2010::pl94_171::P2))
 					}
-					(Some(Schema::Census2010Pl94_171(None)), "p3") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P3))
+					(Some(OldSchema::Census2010Pl94_171(None)), "p3") => {
+						OldSchema::Census2010Pl94_171(Some(census2010::pl94_171::P3))
 					}
-					(Some(Schema::Census2010Pl94_171(None)), "p4") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::P4))
+					(Some(OldSchema::Census2010Pl94_171(None)), "p4") => {
+						OldSchema::Census2010Pl94_171(Some(census2010::pl94_171::P4))
 					}
-					(Some(Schema::Census2010Pl94_171(None)), "h1") => {
-						Schema::Census2010Pl94_171(Some(census2010::pl94_171::H1))
+					(Some(OldSchema::Census2010Pl94_171(None)), "h1") => {
+						OldSchema::Census2010Pl94_171(Some(census2010::pl94_171::H1))
 					}
-					(Some(Schema::Census2010Pl94_171(Some(_))), _) => {
+					(Some(OldSchema::Census2010Pl94_171(Some(_))), _) => {
 						panic!("schema contains table information")
 					}
-					(Some(Schema::Census2010Pl94_171(None)), table) => panic!("unrecognized table {}", table),
+					(Some(OldSchema::Census2010Pl94_171(None)), table) => panic!("unrecognized table {}", table),
 					(None, _) => panic!("schema unknown"),
 				};
 
