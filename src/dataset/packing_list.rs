@@ -49,6 +49,27 @@ impl PackingList {
 	pub fn schema(&self) -> Schema {
 		self.schema
 	}
+
+	pub fn directory(&self) -> &Option<PathBuf> {
+		&self.directory
+	}
+
+	pub fn table_locations(&self) -> &FnvHashMap<Table, TableLocations> {
+		&self.table_locations
+	}
+
+	pub fn tabular_files(&self) -> &FnvHashMap<u32, PathBuf> {
+		&self.tabular_files
+	}
+
+	pub fn geographical_header_file(&self) -> &PathBuf {
+		&self.geographical_header_file
+	}
+
+	/// Find the file relative to the packing list's `directory` field.
+	pub fn locate<P: AsRef<Path>>(&self, path: P) -> Option<PathBuf> {
+		self.directory.as_ref().map(|pb| pb.join(path))
+	}
 }
 
 impl core::str::FromStr for PackingList {

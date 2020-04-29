@@ -27,7 +27,7 @@ pub use dataset::*;
 
 pub struct FileBackedLogicalRecord {
 	number: LogicalRecordNumber,
-	records: FnvHashMap<usize, csv::StringRecord>,
+	records: FnvHashMap<u32, csv::StringRecord>,
 }
 
 impl LogicalRecord for FileBackedLogicalRecord {
@@ -45,7 +45,7 @@ impl FileBackedLogicalRecord {
 		}
 	}
 
-	fn records(mut self, records: BTreeMap<usize, csv::StringRecord>) -> Self {
+	fn records(mut self, records: BTreeMap<u32, csv::StringRecord>) -> Self {
 		self.records.extend(records);
 		self
 	}
@@ -61,37 +61,6 @@ pub mod census2010;
 
 mod schema;
 pub use schema::*;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[non_exhaustive]
-pub(crate) enum FileType {
-	Census2010Pl94_171(census2010::pl94_171::FileType),
-}
-
-impl FileType {
-	fn is_header(&self) -> bool {
-		match self {
-			Self::Census2010Pl94_171(census2010::pl94_171::FileType::GeographicalHeader) => true,
-			_ => false,
-		}
-	}
-
-	fn is_tabular(&self) -> bool {
-		match self {
-			Self::Census2010Pl94_171(census2010::pl94_171::FileType::Tabular(_)) => true,
-			_ => false,
-		}
-	}
-
-	fn tabular_index(&self) -> Option<usize> {
-		match self {
-			Self::Census2010Pl94_171(census2010::pl94_171::FileType::Tabular(n)) => Some(*n),
-			_ => None,
-		}
-	}
-}
-pub(crate) type GeographicalHeaderIndex = BTreeMap<GeoId, (LogicalRecordNumber, u64)>;
-pub(crate) type LogicalRecordIndex = FnvHashMap<FileType, LogicalRecordPositionIndex>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TableSegmentSpecifier {

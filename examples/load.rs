@@ -6,8 +6,7 @@ use distringo::Dataset;
 fn main() -> distringo::Result<()> {
 	simple_logger::init_with_level(log::Level::Trace).unwrap();
 
-	let ds = distringo::IndexedDataset::new("in2010-pl94_171")
-		.unpack("data/in2010.pl.prd.packinglist.txt")?
+	let ds = distringo::IndexedDataset::from_packing_list_file("data/in2010.pl.prd.packinglist.txt")?
 		.index()?;
 
 	let logrecno: distringo::LogicalRecordNumber = 0335180;
