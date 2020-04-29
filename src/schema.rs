@@ -23,8 +23,8 @@ impl<S: AsRef<str>> core::convert::From<S> for OldSchema {
 
 #[cfg(test)]
 mod tests {
-	use crate::census2010::pl94_171::Table;
 	use super::OldSchema;
+	use crate::census2010::pl94_171::Table;
 
 	#[test]
 	fn schema_with_table_de() {

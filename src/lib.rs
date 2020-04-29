@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_variables)]
+
 use fnv::FnvHashMap;
 
 use std::collections::BTreeMap;
@@ -62,7 +64,6 @@ pub use schema::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
-#[deprecated]
 pub(crate) enum FileType {
 	Census2010Pl94_171(census2010::pl94_171::FileType),
 }
@@ -94,13 +95,32 @@ pub(crate) type LogicalRecordIndex = FnvHashMap<FileType, LogicalRecordPositionI
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TableSegmentSpecifier {
-	file: usize,
+	file: u32,
 	columns: usize,
 }
 
-#[derive(Clone, Debug)]
+impl core::str::FromStr for TableSegmentSpecifier {
+	type Err = crate::Error;
+	fn from_str(s: &str) -> Result<Self> {
+		let components: Vec<&str> = s.split(':').collect();
+		let file: u32 = components
+			.get(0)
+			.expect("missing file identifier")
+			.parse()
+			.expect("couldn't parse file identifier");
+		let columns: usize = components
+			.get(1)
+			.expect("missing column width")
+			.parse()
+			.expect("couldn't parse column width");
+
+		Ok(Self { file, columns })
+	}
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct TableSegmentLocation {
-	file: usize,
+	file: u32,
 	range: core::ops::Range<usize>,
 }
 
