@@ -11,14 +11,6 @@ pub enum Table {
 
 pub use Table::{H1, P1, P2, P3, P4};
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum FileType {
-	Tabular(usize),
-	GeographicalHeader,
-}
-
-pub use FileType::Tabular;
-
 macro_rules! generate_field_getter {
 	($container_type:ty, $container_data_field:ident, $name:ident, [$vis:vis , $getter_name:ident #> $pty:ty]) => {
 		#[allow(dead_code)]
