@@ -1,8 +1,4 @@
-#![allow(dead_code, unused_variables)]
-
 use fnv::FnvHashMap;
-
-use std::collections::BTreeMap;
 
 mod error;
 pub use error::*;
@@ -27,7 +23,7 @@ pub use dataset::*;
 
 pub struct FileBackedLogicalRecord {
 	number: LogicalRecordNumber,
-	records: FnvHashMap<u32, csv::StringRecord>,
+	raw_records: FnvHashMap<u32, csv::StringRecord>,
 }
 
 impl LogicalRecord for FileBackedLogicalRecord {
@@ -37,17 +33,15 @@ impl LogicalRecord for FileBackedLogicalRecord {
 }
 
 impl FileBackedLogicalRecord {
-	fn new(number: LogicalRecordNumber) -> Self {
+	pub fn new(number: LogicalRecordNumber, raw_records: FnvHashMap<u32, csv::StringRecord>) -> Self {
 		Self {
 			number,
-
-			records: FnvHashMap::default(),
+			raw_records,
 		}
 	}
 
-	fn records(mut self, records: BTreeMap<u32, csv::StringRecord>) -> Self {
-		self.records.extend(records);
-		self
+	pub fn raw_records(&self) -> &FnvHashMap<u32, csv::StringRecord> {
+		&self.raw_records
 	}
 }
 

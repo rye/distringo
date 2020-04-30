@@ -41,13 +41,12 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<FileBackedLogicalRecord> {
 		match &self.logical_record_index {
 			Some(index) => {
-				let records_from_file: BTreeMap<u32, csv::StringRecord> = self
+				let records_from_file: FnvHashMap<u32, csv::StringRecord> = self
 					.tabular_files
 					.iter()
 					.map(|(idx, file)| -> (u32, csv::StringRecord) {
 						let corresponding_logrec_position_index = index.get(&idx).unwrap();
-						let offset: u64 = corresponding_logrec_position_index[number]
-							.expect("failed to find position for record");
+						let offset: u64 = corresponding_logrec_position_index[number];
 
 						use std::io::Seek;
 						let mut reader = BufReader::new(file);
@@ -67,7 +66,7 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 					})
 					.collect();
 
-				let record = FileBackedLogicalRecord::new(number).records(records_from_file);
+				let record = FileBackedLogicalRecord::new(number, records_from_file);
 
 				Ok(record)
 			}
@@ -205,8 +204,8 @@ impl IndexedDataset {
 			for record in file_reader.records() {
 				let record: csv::StringRecord = record?;
 				let position = record.position().expect("couldn't find position of record");
-
 				let byte_offset: u64 = position.byte();
+
 				let logrecno: LogicalRecordNumber = record[4]
 					.parse::<LogicalRecordNumber>()
 					.expect("couldn't parse logical record number");

@@ -1,26 +1,25 @@
 use crate::LogicalRecordNumber;
 
 pub struct LogicalRecordPositionIndex {
-	inner: Vec<Option<u64>>,
+	inner: Vec<u64>,
 }
 
 impl LogicalRecordPositionIndex {
 	pub fn new_with_size(size: usize) -> Self {
-		Self {
-			inner: Vec::with_capacity(size),
-		}
+		let inner = vec![0_u64; size];
+
+		Self { inner }
 	}
 
 	pub fn insert(&mut self, logrecno: LogicalRecordNumber, offset: u64) {
 		let idx: usize = logrecno as usize;
-		self.inner.resize(idx + 1, None);
-		self.inner[idx] = Some(offset);
+		self.inner[idx] = offset;
 	}
 }
 
 impl core::ops::Index<LogicalRecordNumber> for LogicalRecordPositionIndex {
-	type Output = Option<u64>;
-	fn index(&self, logrecno: LogicalRecordNumber) -> &Option<u64> {
+	type Output = u64;
+	fn index(&self, logrecno: LogicalRecordNumber) -> &u64 {
 		&self.inner[logrecno as usize]
 	}
 }

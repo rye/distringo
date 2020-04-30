@@ -12,13 +12,19 @@ fn main() -> distringo::Result<()> {
 	let logrecno: distringo::LogicalRecordNumber = 0335180;
 
 	let record = ds.get_logical_record(logrecno)?;
+	assert_eq!(
+		record
+			.raw_records()
+			.values()
+			.collect::<Vec<&csv::StringRecord>>(),
+		vec![&csv::StringRecord::new(), &csv::StringRecord::new()]
+	);
 
 	let logrecno = ds.get_logical_record_number_for_geoid("181570052001013")?;
 	assert_eq!(logrecno, 0335180);
 
 	let header = ds.get_header_for_geoid("181570052001013")?;
 	assert_eq!(header.name(), "Block 1013");
-
 	assert_eq!(header.logrecno(), 0335180);
 
 	Ok(())
