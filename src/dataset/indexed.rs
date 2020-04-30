@@ -18,7 +18,6 @@ use crate::Table;
 use crate::TableLocations;
 
 use fnv::FnvHashMap;
-use regex::Regex;
 
 /// A Census Dataset
 ///
@@ -112,28 +111,6 @@ impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 			unimplemented!()
 		}
 	}
-}
-
-lazy_static::lazy_static! {
-	pub(super) static ref TABLE_INFORMATION_RE: Regex =
-		Regex::new(r"^(?P<table>[A-Za-z0-9]+)\|(?P<loc>[\d: ]+)\|$")
-			.expect("regex parse failed");
-
-	pub(super) static ref TABLE_INFORMATION_RE_ML: Regex =
-		Regex::new(r"(?m)^(?P<table>[A-Za-z0-9]+)\|(?P<loc>[\d: ]+)\|$")
-			.expect("regex parse failed");
-
-	pub(super) static ref FILE_INFORMATION_RE: Regex =
-		Regex::new(r"^(?P<filename>(?P<stusab>[a-z]{2})(?P<ident>\w+)(?P<year>\d{4})\.(?P<ds>.+))\|(?P<date>.+)\|(?P<size>\d+)\|(?P<lines>\d+)\|$")
-			.expect("regex parse failed");
-
-	pub(super) static ref FILE_INFORMATION_RE_ML: Regex =
-		Regex::new(r"(?m)^(?P<filename>(?P<stusab>[a-z]{2})(?P<ident>\w+)(?P<year>\d{4})\.(?P<ds>.+))\|(?P<date>.+)\|(?P<size>\d+)\|(?P<lines>\d+)\|$")
-			.expect("regex parse failed");
-
-	pub(super) static ref STUSAB_RE: Regex =
-		Regex::new(r"(?m)STUSAB: (?P<stusab>[A-Z]{2})$")
-			.expect("regex parse failed");
 }
 
 impl IndexedDataset {
