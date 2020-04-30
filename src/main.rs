@@ -26,7 +26,7 @@ fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
 }
 
 #[tokio::main]
-async fn main() -> distringo::error::Result<()> {
+async fn main() -> distringo::Result<()> {
 	if std::env::var("DISTRINGO_LOG").ok().is_none() {
 		std::env::set_var("DISTRINGO_LOG", "info");
 	}
@@ -48,11 +48,11 @@ async fn main() -> distringo::error::Result<()> {
 		let host: IpAddr = settings
 			.get_str("server.host")?
 			.parse()
-			.map_err(|_| distringo::error::Error::InvalidServerHost)?;
+			.map_err(|_| distringo::Error::InvalidServerHost)?;
 		let port: u16 = settings
 			.get_int("server.port")?
 			.try_into()
-			.map_err(|_| distringo::error::Error::InvalidServerPort)?;
+			.map_err(|_| distringo::Error::InvalidServerPort)?;
 
 		SocketAddr::new(host, port)
 	};

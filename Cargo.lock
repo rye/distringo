@@ -220,6 +220,7 @@ version = "0.1.0"
 dependencies = [
  "config",
  "csv",
+ "fnv",
  "hyper",
  "lazy_static",
  "log 0.4.8",

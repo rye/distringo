@@ -3,53 +3,29 @@ use distringo::Dataset;
 /// Simple loading example
 ///
 /// Reads a packing list from
-fn main() -> distringo::error::Result<()> {
+fn main() -> distringo::Result<()> {
 	simple_logger::init_with_level(log::Level::Trace).unwrap();
 
-	let ds = distringo::IndexedDataset::new("in2010-pl94_171")
-		.unpack("data/in2010.pl.prd.packinglist.txt")?
+	let ds = distringo::IndexedDataset::from_packing_list_file("data/in2010.pl.prd.packinglist.txt")?
 		.index()?;
 
-	let logrecno: distringo::LogicalRecordNumber = 0335180;
-	let start = std::time::Instant::now();
-	let string_record = ds.get_logical_record(logrecno, vec!["p1", "p2", "p3", "p4", "h1"])?;
+	let logrecno: distringo::LogicalRecordNumber = 335180;
 
-	println!(
-		"Retrieved record {} in {}ns",
-		logrecno,
-		std::time::Instant::now().duration_since(start).as_nanos()
-	);
-
+	let record = ds.get_logical_record(logrecno)?;
 	assert_eq!(
-		string_record,
-		csv::StringRecord::from(vec![
-			"53", "52", "50", "0", "0", "2", "0", "0", "1", "1", "0", "0", "1", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "53",
-			"2", "51", "50", "48", "0", "0", "2", "0", "0", "1", "1", "0", "0", "1", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"45", "45", "43", "0", "0", "2", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "45",
-			"1", "44", "44", "42", "0", "0", "2", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-			"24", "24", "0"
-		])
+		record
+			.raw_records()
+			.values()
+			.collect::<Vec<&csv::StringRecord>>(),
+		vec![&csv::StringRecord::new(), &csv::StringRecord::new()]
 	);
 
 	let logrecno = ds.get_logical_record_number_for_geoid("181570052001013")?;
-	assert_eq!(logrecno, 0335180);
+	assert_eq!(logrecno, 335180);
 
 	let header = ds.get_header_for_geoid("181570052001013")?;
 	assert_eq!(header.name(), "Block 1013");
-
-	assert_eq!(header.logrecno(), 0335180);
+	assert_eq!(header.logrecno(), 335180);
 
 	Ok(())
 }
