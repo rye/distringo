@@ -220,7 +220,7 @@ impl core::str::FromStr for PackingList {
 					{
 						"geo" => FileType::GeographicalHeader,
 						n => {
-							if let Some(idx) = n.parse::<u32>().ok() {
+							if let Ok(idx) = n.parse::<u32>() {
 								FileType::Tabular(idx)
 							} else {
 								unimplemented!()
