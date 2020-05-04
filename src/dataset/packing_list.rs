@@ -230,7 +230,7 @@ fn convert_file_information(
 	)
 }
 
-fn extract_table_locations(schema: &Schema, s: &str) -> FnvHashMap<Table, TableLocations> {
+fn extract_table_locations(schema: Schema, s: &str) -> FnvHashMap<Table, TableLocations> {
 	let mut current_columns: FnvHashMap<u32, usize> = FnvHashMap::default();
 
 	TABLE_INFORMATION_RE_ML
@@ -358,7 +358,7 @@ impl core::str::FromStr for PackingList {
 
 		// TODO consider just hard-coding the table locations in our spec
 
-		let table_locations: FnvHashMap<Table, TableLocations> = extract_table_locations(&schema, s);
+		let table_locations: FnvHashMap<Table, TableLocations> = extract_table_locations(schema, s);
 
 		Ok(Self {
 			schema,
