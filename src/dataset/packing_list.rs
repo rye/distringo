@@ -230,6 +230,76 @@ fn convert_file_information(
 	)
 }
 
+fn extract_table_locations(schema: &Schema, s: &str) -> FnvHashMap<Table, TableLocations> {
+	let mut current_columns: FnvHashMap<u32, usize> = FnvHashMap::default();
+
+	TABLE_INFORMATION_RE_ML
+		.captures_iter(s)
+		.map(|captures| -> (Table, TableLocations) {
+			log::trace!(
+				"Processing table segmentation regex match: {}",
+				captures.get(0).unwrap().as_str()
+			);
+
+			let (name, specs): (&str, &str) = (
+				captures
+					.name("table")
+					.expect("missing capture group table")
+					.as_str(),
+				captures
+					.name("loc")
+					.expect("missing capture group loc")
+					.as_str(),
+			);
+			let specs: Vec<&str> = specs.split(' ').collect();
+			let specs: Vec<TableSegmentSpecifier> = specs.iter().filter_map(|s| s.parse().ok()).collect();
+
+			let table: Table = match (schema, name) {
+				(Schema::Census2010(census2010::Schema::Pl94_171), "p1") => {
+					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P1))
+				}
+				(Schema::Census2010(census2010::Schema::Pl94_171), "p2") => {
+					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P2))
+				}
+				(Schema::Census2010(census2010::Schema::Pl94_171), "p3") => {
+					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P3))
+				}
+				(Schema::Census2010(census2010::Schema::Pl94_171), "p4") => {
+					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P4))
+				}
+				(Schema::Census2010(census2010::Schema::Pl94_171), "h1") => {
+					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::H1))
+				}
+				(Schema::Census2010(census2010::Schema::Pl94_171), _) => unimplemented!(),
+				(_, _) => unimplemented!(),
+			};
+
+			let locations: TableLocations = specs
+				.iter()
+				.map(|specifier| {
+					if current_columns.get(&specifier.file).is_none() {
+						current_columns.insert(specifier.file, 5_usize);
+					}
+
+					let start: usize = *current_columns.get(&specifier.file).unwrap();
+					let end: usize = start + specifier.columns;
+
+					current_columns.insert(specifier.file, end);
+
+					TableSegmentLocation {
+						file: specifier.file,
+						range: start..end,
+					}
+				})
+				.collect();
+
+			log::trace!("Table {:?} is found at {:?}", table, locations);
+
+			(table, locations)
+		})
+		.collect()
+}
+
 impl core::str::FromStr for PackingList {
 	type Err = crate::error::Error;
 
@@ -288,76 +358,7 @@ impl core::str::FromStr for PackingList {
 
 		// TODO consider just hard-coding the table locations in our spec
 
-		let table_locations: FnvHashMap<Table, TableLocations> = {
-			let mut current_columns: FnvHashMap<u32, usize> = FnvHashMap::default();
-
-			TABLE_INFORMATION_RE_ML
-				.captures_iter(s)
-				.map(|captures| -> (Table, TableLocations) {
-					log::trace!(
-						"Processing table segmentation regex match: {}",
-						captures.get(0).unwrap().as_str()
-					);
-
-					let (name, specs): (&str, &str) = (
-						captures
-							.name("table")
-							.expect("missing capture group table")
-							.as_str(),
-						captures
-							.name("loc")
-							.expect("missing capture group loc")
-							.as_str(),
-					);
-					let specs: Vec<&str> = specs.split(' ').collect();
-					let specs: Vec<TableSegmentSpecifier> =
-						specs.iter().filter_map(|s| s.parse().ok()).collect();
-
-					let table: Table = match (schema, name) {
-						(Schema::Census2010(census2010::Schema::Pl94_171), "p1") => {
-							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P1))
-						}
-						(Schema::Census2010(census2010::Schema::Pl94_171), "p2") => {
-							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P2))
-						}
-						(Schema::Census2010(census2010::Schema::Pl94_171), "p3") => {
-							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P3))
-						}
-						(Schema::Census2010(census2010::Schema::Pl94_171), "p4") => {
-							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::P4))
-						}
-						(Schema::Census2010(census2010::Schema::Pl94_171), "h1") => {
-							Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::H1))
-						}
-						(Schema::Census2010(census2010::Schema::Pl94_171), _) => unimplemented!(),
-						(_, _) => unimplemented!(),
-					};
-
-					let locations: TableLocations = specs
-						.iter()
-						.map(|specifier| {
-							if current_columns.get(&specifier.file).is_none() {
-								current_columns.insert(specifier.file, 5_usize);
-							}
-
-							let start: usize = *current_columns.get(&specifier.file).unwrap();
-							let end: usize = start + specifier.columns;
-
-							current_columns.insert(specifier.file, end);
-
-							TableSegmentLocation {
-								file: specifier.file,
-								range: start..end,
-							}
-						})
-						.collect();
-
-					log::trace!("Table {:?} is found at {:?}", table, locations);
-
-					(table, locations)
-				})
-				.collect()
-		};
+		let table_locations: FnvHashMap<Table, TableLocations> = extract_table_locations(&schema, s);
 
 		Ok(Self {
 			schema,
