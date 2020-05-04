@@ -200,7 +200,7 @@ fn extract_file_information(s: &str) -> Vec<FileInformation> {
 }
 
 fn partition_file_information(
-	file_informations: &Vec<FileInformation>,
+	file_informations: &[FileInformation],
 ) -> (FnvHashMap<u32, &FileInformation>, &FileInformation) {
 	let header: &FileInformation = file_informations
 		.iter()
