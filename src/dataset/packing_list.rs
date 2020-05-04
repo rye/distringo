@@ -140,6 +140,65 @@ struct FileInformation {
 	ty: FileType,
 }
 
+fn extract_file_information(s: &str) -> Vec<FileInformation> {
+	FILE_INFORMATION_RE_ML
+		.captures_iter(s)
+		.map(|captures| {
+			log::trace!(
+				"Processing file information regex match: {}",
+				captures.get(0).unwrap().as_str()
+			);
+
+			let (filename, date, size, rows): (&str, &str, &str, &str) = (
+				captures
+					.name("filename")
+					.expect("missing capture group filename")
+					.as_str(),
+				captures
+					.name("date")
+					.expect("missing capture group date")
+					.as_str(),
+				captures
+					.name("size")
+					.expect("missing capture group size")
+					.as_str(),
+				captures
+					.name("lines")
+					.expect("missing capture group lines")
+					.as_str(),
+			);
+			let filename = filename.to_string().into();
+			let date = date.to_string();
+			let file_size: usize = size.parse().expect("couldn't parse size as usize");
+			let rows: usize = rows.parse().expect("couldn't parse rows as usize");
+			let ty: FileType = match captures
+				.name("ident")
+				.expect("missing capture group ident")
+				.as_str()
+			{
+				"geo" => FileType::GeographicalHeader,
+				n => {
+					if let Ok(idx) = n.parse::<u32>() {
+						FileType::Tabular(idx)
+					} else {
+						unimplemented!()
+					}
+				}
+			};
+
+			log::trace!("Inferred filetype {:?} for {:?}", ty, filename);
+
+			FileInformation {
+				filename,
+				date,
+				file_size,
+				rows,
+				ty,
+			}
+		})
+		.collect()
+}
+
 impl core::str::FromStr for PackingList {
 	type Err = crate::error::Error;
 
@@ -188,62 +247,7 @@ impl core::str::FromStr for PackingList {
 		log::debug!("Reading packing list content definitions");
 
 		let (tabular_files, geographical_header_file): (FnvHashMap<u32, PathBuf>, PathBuf) = {
-			let file_informations: Vec<FileInformation> = FILE_INFORMATION_RE_ML
-				.captures_iter(s)
-				.map(|captures| {
-					log::trace!(
-						"Processing file information regex match: {}",
-						captures.get(0).unwrap().as_str()
-					);
-
-					let (filename, date, size, rows): (&str, &str, &str, &str) = (
-						captures
-							.name("filename")
-							.expect("missing capture group filename")
-							.as_str(),
-						captures
-							.name("date")
-							.expect("missing capture group date")
-							.as_str(),
-						captures
-							.name("size")
-							.expect("missing capture group size")
-							.as_str(),
-						captures
-							.name("lines")
-							.expect("missing capture group lines")
-							.as_str(),
-					);
-					let filename = filename.to_string().into();
-					let date = date.to_string();
-					let file_size: usize = size.parse().expect("couldn't parse size as usize");
-					let rows: usize = rows.parse().expect("couldn't parse rows as usize");
-					let ty: FileType = match captures
-						.name("ident")
-						.expect("missing capture group ident")
-						.as_str()
-					{
-						"geo" => FileType::GeographicalHeader,
-						n => {
-							if let Ok(idx) = n.parse::<u32>() {
-								FileType::Tabular(idx)
-							} else {
-								unimplemented!()
-							}
-						}
-					};
-
-					log::trace!("Inferred filetype {:?} for {:?}", ty, filename);
-
-					FileInformation {
-						filename,
-						date,
-						file_size,
-						rows,
-						ty,
-					}
-				})
-				.collect();
+			let file_informations: Vec<FileInformation> = extract_file_information(s);
 
 			let header: PathBuf = file_informations
 				.iter()
