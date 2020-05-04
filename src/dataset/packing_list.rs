@@ -199,6 +199,37 @@ fn extract_file_information(s: &str) -> Vec<FileInformation> {
 		.collect()
 }
 
+fn partition_file_information(
+	file_informations: &Vec<FileInformation>,
+) -> (FnvHashMap<u32, &FileInformation>, &FileInformation) {
+	let header: &FileInformation = file_informations
+		.iter()
+		.find(|fi| fi.ty == FileType::GeographicalHeader)
+		.expect("missing geographical header");
+	let tabular_files: FnvHashMap<u32, &FileInformation> = file_informations
+		.iter()
+		.filter_map(|fi| match fi.ty {
+			FileType::Tabular(idx) => Some((idx, fi)),
+			_ => None,
+		})
+		.collect();
+
+	(tabular_files, header)
+}
+
+fn convert_file_information(
+	partition: &(FnvHashMap<u32, &FileInformation>, &FileInformation),
+) -> (FnvHashMap<u32, PathBuf>, PathBuf) {
+	(
+		partition
+			.0
+			.iter()
+			.map(|(idx, fi)| (*idx, fi.filename.clone()))
+			.collect(),
+		partition.1.filename.clone(),
+	)
+}
+
 impl core::str::FromStr for PackingList {
 	type Err = crate::error::Error;
 
@@ -248,21 +279,7 @@ impl core::str::FromStr for PackingList {
 
 		let (tabular_files, geographical_header_file): (FnvHashMap<u32, PathBuf>, PathBuf) = {
 			let file_informations: Vec<FileInformation> = extract_file_information(s);
-
-			let header: PathBuf = file_informations
-				.iter()
-				.find(|fi| fi.ty == FileType::GeographicalHeader)
-				.map(|fi| fi.filename.clone())
-				.expect("missing geographical header");
-			let tabular_files: FnvHashMap<u32, PathBuf> = file_informations
-				.iter()
-				.filter_map(|fi| match fi.ty {
-					FileType::Tabular(idx) => Some((idx, fi.filename.clone())),
-					_ => None,
-				})
-				.collect();
-
-			(tabular_files, header)
+			convert_file_information(&partition_file_information(&file_informations))
 		};
 
 		// PHASE 3: Calculate the table locations
