@@ -98,6 +98,28 @@ fn get_stusab(s: &str) -> String {
 	stusab
 }
 
+fn extract_schemas(re: &Regex, s: &str) -> Vec<Schema> {
+	re.captures_iter(s)
+		.map(|captures| {
+			log::trace!(
+				"Processing filename regex match: {}",
+				captures.get(0).unwrap().as_str()
+			);
+
+			let captures: (Option<&str>, Option<&str>, Option<&str>) = (
+				captures.name("inner").as_ref().map(regex::Match::as_str),
+				captures.name("year").as_ref().map(regex::Match::as_str),
+				captures.name("ext").as_ref().map(regex::Match::as_str),
+			);
+
+			match captures {
+				(Some(_), Some("2010"), Some("pl")) => Schema::Census2010(census2010::Schema::Pl94_171),
+				_ => unimplemented!(),
+			}
+		})
+		.collect()
+}
+
 #[derive(Debug, PartialEq)]
 enum FileType {
 	Tabular(u32),
@@ -147,26 +169,7 @@ impl core::str::FromStr for PackingList {
 
 		log::debug!("Inferring schema");
 
-		let mut schemas: Vec<Schema> = filename_re
-			.captures_iter(s)
-			.map(|captures| {
-				log::trace!(
-					"Processing filename regex match: {}",
-					captures.get(0).unwrap().as_str()
-				);
-
-				let captures: (Option<&str>, Option<&str>, Option<&str>) = (
-					captures.name("inner").as_ref().map(regex::Match::as_str),
-					captures.name("year").as_ref().map(regex::Match::as_str),
-					captures.name("ext").as_ref().map(regex::Match::as_str),
-				);
-
-				match captures {
-					(Some(_), Some("2010"), Some("pl")) => Schema::Census2010(census2010::Schema::Pl94_171),
-					_ => unimplemented!(),
-				}
-			})
-			.collect();
+		let mut schemas: Vec<Schema> = extract_schemas(&filename_re, s);
 
 		log::trace!("Deduplicating {} schemas", schemas.len());
 
