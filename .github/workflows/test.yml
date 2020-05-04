@@ -27,7 +27,7 @@ jobs:
       uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features --all-targets -- -D clippy::all -W clippy::cargo -W clippy::pedantic -D clippy::cognitive-complexity
+        args: --all-features -D clippy::all -W clippy::cargo -W clippy::pedantic -D clippy::cognitive-complexity
 
   test:
     name: Test the code
