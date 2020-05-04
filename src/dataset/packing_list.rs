@@ -92,6 +92,12 @@ impl PackingList {
 	}
 }
 
+fn get_stusab(s: &str) -> String {
+	let stusab_all_caps: &str = &STUSAB_RE.captures(s).expect("failed to find STUSAB")["stusab"];
+	let stusab: String = stusab_all_caps.to_lowercase();
+	stusab
+}
+
 impl core::str::FromStr for PackingList {
 	type Err = crate::error::Error;
 
@@ -102,11 +108,7 @@ impl core::str::FromStr for PackingList {
 
 		log::debug!("Parsing STUSAB field from packing list data");
 
-		let stusab: String = {
-			let stusab_all_caps: &str = &STUSAB_RE.captures(s).expect("failed to find STUSAB")["stusab"];
-			let stusab: String = stusab_all_caps.to_lowercase();
-			stusab
-		};
+		let stusab: String = get_stusab(s);
 
 		log::debug!("Inferred STUSAB: {}", stusab);
 
