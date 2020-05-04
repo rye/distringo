@@ -98,6 +98,26 @@ fn get_stusab(s: &str) -> String {
 	stusab
 }
 
+#[derive(Debug, PartialEq)]
+enum FileType {
+	Tabular(u32),
+	GeographicalHeader,
+}
+
+struct DataSegmentation {
+	table_name: String,
+	table_locations: Vec<TableLocations>,
+}
+
+#[derive(Debug)]
+struct FileInformation {
+	filename: PathBuf,
+	date: String,
+	file_size: usize,
+	rows: usize,
+	ty: FileType,
+}
+
 impl core::str::FromStr for PackingList {
 	type Err = crate::error::Error;
 
@@ -161,26 +181,6 @@ impl core::str::FromStr for PackingList {
 		log::debug!("Inferred schema: {:?}", schema);
 
 		// PHASE 2: Collect the file information
-
-		#[derive(Debug, PartialEq)]
-		enum FileType {
-			Tabular(u32),
-			GeographicalHeader,
-		}
-
-		struct DataSegmentation {
-			table_name: String,
-			table_locations: Vec<TableLocations>,
-		}
-
-		#[derive(Debug)]
-		struct FileInformation {
-			filename: PathBuf,
-			date: String,
-			file_size: usize,
-			rows: usize,
-			ty: FileType,
-		}
 
 		log::debug!("Reading packing list content definitions");
 
