@@ -271,7 +271,6 @@ fn extract_table_locations(schema: Schema, s: &str) -> FnvHashMap<Table, TableLo
 					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::H1))
 				}
 				(Schema::Census2010(census2010::Schema::Pl94_171), _) => unimplemented!(),
-				(_, _) => unimplemented!(),
 			};
 
 			let locations: TableLocations = specs
