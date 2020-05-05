@@ -178,17 +178,21 @@ impl IndexedDataset {
 			log::trace!("Reading records");
 
 			let t0 = std::time::Instant::now();
-			for record in file_reader.records() {
-				let record: csv::StringRecord = record?;
-				let position = record.position().expect("couldn't find position of record");
-				let byte_offset: u64 = position.byte();
 
-				let logrecno: LogicalRecordNumber = record[4]
-					.parse::<LogicalRecordNumber>()
-					.expect("couldn't parse logical record number");
+			index.extend(
+				file_reader
+					.records()
+					.filter_map(|record| record.ok())
+					.map(|record| {
+						let position = record.position().expect("couldn't find position of record");
+						let byte_offset: u64 = position.byte();
 
-				index.insert(logrecno, byte_offset);
-			}
+						// NOTE Assumption made here: Logical Record Number = Line Number
+						let logrecno: LogicalRecordNumber = position.line();
+
+						(logrecno, byte_offset)
+					}),
+			);
 
 			log::trace!(
 				"Finished indexing in {}ns",
