@@ -207,9 +207,9 @@ impl IndexedDataset {
 		let mut pos = 0_u64;
 
 		loop {
-			let bytes = reader.read_line(&mut buf)?;
+			let bytes_read = reader.read_line(&mut buf)?;
 
-			if bytes > 0 {
+			if bytes_read > 0 {
 				let logrecno = &buf[18..25];
 				let state_fips = &buf[27..29];
 				let county = &buf[29..32];
@@ -230,7 +230,7 @@ impl IndexedDataset {
 					}
 				};
 
-				pos += bytes as u64;
+				pos += bytes_read as u64;
 				buf.clear();
 			} else {
 				break;
