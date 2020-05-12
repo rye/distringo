@@ -26,19 +26,19 @@ use fnv::FnvHashMap;
 pub struct IndexedDataset {
 	schema: Schema,
 	header_index: Option<GeographicalHeaderIndex>,
-	logical_record_index: Option<TabularLogicalRecordIndex>,
+	tabular_index: Option<TabularIndex>,
 	table_locations: FnvHashMap<Table, TableLocations>,
 	geographical_header: File,
 	tabular_files: FnvHashMap<u32, File>,
 }
 
 pub(crate) type GeographicalHeaderIndex = BTreeMap<GeoId, (LogicalRecordNumber, u64)>;
-pub(crate) type TabularLogicalRecordIndex = FnvHashMap<u32, LogicalRecordPositionIndex>;
+pub(crate) type TabularIndex = FnvHashMap<u32, LogicalRecordPositionIndex>;
 
 impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
 	/// Retrieve the logical record by number and by table
 	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<FileBackedLogicalRecord> {
-		match &self.logical_record_index {
+		match &self.tabular_index {
 			Some(index) => {
 				let records_from_file: FnvHashMap<u32, csv::StringRecord> = self
 					.tabular_files
@@ -122,7 +122,7 @@ impl IndexedDataset {
 				.expect("couldn't locate geographical header file"),
 		)?;
 		let header_index: Option<GeographicalHeaderIndex> = None;
-		let logical_record_index: Option<TabularLogicalRecordIndex> = None;
+		let tabular_index: Option<TabularIndex> = None;
 		let table_locations: FnvHashMap<Table, TableLocations> = packing_list.table_locations().clone();
 		let tabular_files: FnvHashMap<u32, File> = packing_list
 			.tabular_files()
@@ -148,7 +148,7 @@ impl IndexedDataset {
 			schema,
 			geographical_header,
 			header_index,
-			logical_record_index,
+			tabular_index,
 			table_locations,
 			tabular_files,
 		})
@@ -161,7 +161,7 @@ impl IndexedDataset {
 
 	pub fn index(mut self) -> Result<Self> {
 		let mut new_header_index = GeographicalHeaderIndex::new();
-		let mut new_logical_record_index = TabularLogicalRecordIndex::default();
+		let mut new_tabular_index = TabularIndex::default();
 
 		log::debug!("Indexing tabular files...");
 
@@ -201,7 +201,7 @@ impl IndexedDataset {
 
 			log::trace!("Adding logical record index to global index");
 
-			new_logical_record_index.insert(*idx, index);
+			new_tabular_index.insert(*idx, index);
 		}
 
 		log::debug!("Indexing geographical header file");
@@ -241,7 +241,7 @@ impl IndexedDataset {
 			}
 		}
 
-		self.logical_record_index = Some(new_logical_record_index);
+		self.tabular_index = Some(new_tabular_index);
 		self.header_index = Some(new_header_index);
 
 		Ok(self)
