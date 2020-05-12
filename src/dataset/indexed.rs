@@ -36,7 +36,7 @@ pub struct IndexedDataset {
 pub(crate) type GeographicalHeaderIndex = BTreeMap<GeoId, (LogicalRecordNumber, u64)>;
 pub(crate) type TabularIndex = FnvHashMap<u32, LogicalRecordPositionIndex>;
 
-impl Dataset<FileBackedLogicalRecord> for IndexedDataset {
+impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 	/// Retrieve the logical record by number and by table
 	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<FileBackedLogicalRecord> {
 		match &self.tabular_index {

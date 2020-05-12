@@ -1,9 +1,8 @@
 use crate::error::Result;
 use crate::GeographicalHeader;
-use crate::LogicalRecordNumber;
 
 /// A trait containing behavior expected for datasets
-pub trait Dataset<LogicalRecord> {
+pub trait Dataset<LogicalRecord, LogicalRecordNumber> {
 	/// Retrieve the logical record with number `number`
 	fn get_logical_record(&self, number: LogicalRecordNumber) -> Result<LogicalRecord>;
 
