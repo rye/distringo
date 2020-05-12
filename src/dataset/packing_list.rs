@@ -40,6 +40,7 @@ pub struct PackingList {
 	table_locations: FnvHashMap<Table, TableLocations>,
 	tabular_files: FnvHashMap<u32, PathBuf>,
 	geographical_header_file: PathBuf,
+	rows: usize,
 }
 
 fn read_file_to_string<P: AsRef<Path>>(path: P) -> Result<String> {
@@ -84,6 +85,10 @@ impl PackingList {
 
 	pub fn geographical_header_file(&self) -> &PathBuf {
 		&self.geographical_header_file
+	}
+
+	pub fn rows(&self) -> &usize {
+		&self.rows
 	}
 
 	/// Find the file relative to the packing list's `directory` field.
@@ -219,7 +224,7 @@ fn partition_file_information(
 
 fn convert_file_information(
 	partition: &(FnvHashMap<u32, &FileInformation>, &FileInformation),
-) -> (FnvHashMap<u32, PathBuf>, PathBuf) {
+) -> (FnvHashMap<u32, PathBuf>, PathBuf, usize) {
 	(
 		partition
 			.0
@@ -227,6 +232,17 @@ fn convert_file_information(
 			.map(|(idx, fi)| (*idx, fi.filename.clone()))
 			.collect(),
 		partition.1.filename.clone(),
+		{
+			let mut vec: Vec<usize> = partition
+				.0
+				.iter()
+				.map(|(_idx, fi)| fi.rows)
+				.collect::<Vec<usize>>();
+			vec.push(partition.1.rows);
+			vec.dedup();
+			debug_assert!(vec.len() == 1);
+			vec[0]
+		},
 	)
 }
 
@@ -346,7 +362,11 @@ impl core::str::FromStr for PackingList {
 
 		log::debug!("Reading packing list content definitions");
 
-		let (tabular_files, geographical_header_file): (FnvHashMap<u32, PathBuf>, PathBuf) = {
+		let (tabular_files, geographical_header_file, rows): (
+			FnvHashMap<u32, PathBuf>,
+			PathBuf,
+			usize,
+		) = {
 			let file_informations: Vec<FileInformation> = extract_file_information(s);
 			convert_file_information(&partition_file_information(&file_informations))
 		};
@@ -365,6 +385,7 @@ impl core::str::FromStr for PackingList {
 			table_locations,
 			tabular_files,
 			geographical_header_file,
+			rows,
 		})
 	}
 }

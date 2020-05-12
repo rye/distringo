@@ -30,6 +30,7 @@ pub struct IndexedDataset {
 	table_locations: FnvHashMap<Table, TableLocations>,
 	geographical_header: File,
 	tabular_files: FnvHashMap<u32, File>,
+	rows: usize,
 }
 
 pub(crate) type GeographicalHeaderIndex = BTreeMap<GeoId, (LogicalRecordNumber, u64)>;
@@ -143,6 +144,7 @@ impl IndexedDataset {
 				}
 			})
 			.collect();
+		let rows: usize = *packing_list.rows();
 
 		Ok(Self {
 			schema,
@@ -151,6 +153,7 @@ impl IndexedDataset {
 			tabular_index,
 			table_locations,
 			tabular_files,
+			rows,
 		})
 	}
 
@@ -173,7 +176,7 @@ impl IndexedDataset {
 				.has_headers(false)
 				.from_reader(file_reader);
 
-			let mut index = LogicalRecordPositionIndex::new_with_size(1_250_000);
+			let mut index = LogicalRecordPositionIndex::new_with_size(self.rows);
 
 			log::trace!("Reading records");
 

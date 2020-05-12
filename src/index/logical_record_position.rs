@@ -6,7 +6,7 @@ pub struct LogicalRecordPositionIndex {
 
 impl LogicalRecordPositionIndex {
 	pub fn new_with_size(size: usize) -> Self {
-		let inner = vec![0_u64; size];
+		let inner = vec![0_u64; size + 1];
 
 		Self { inner }
 	}
