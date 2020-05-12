@@ -371,6 +371,13 @@ impl core::str::FromStr for PackingList {
 			convert_file_information(&partition_file_information(&file_informations))
 		};
 
+		log::debug!(
+			"Packing list: tabulars={:?}, header={:?}, rows={:?}",
+			tabular_files,
+			geographical_header_file,
+			rows
+		);
+
 		// PHASE 3: Calculate the table locations
 
 		log::debug!("Reading data segmentation specifiers");
