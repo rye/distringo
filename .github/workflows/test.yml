@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly]
+        rust: [stable, beta]
     steps:
     - name: Install the appropriate Rust toolchain
       run: |
