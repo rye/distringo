@@ -16,115 +16,25 @@
 		</main>
 
 		<script src="js/index.js"></script>
+		<script src="js/api.js"></script>
 		<script defer>
-		// const apiUri =
+		const apiUri = `${window.location.origin}/api/v0`;
 
-		let mapState = getMapState();
-
-		let [center, zoom] = [
-			mapState.center || {lat: 39.8333333, lng: -98.585522},
-			mapState.zoom || 3.0,
+		let shapefiles = [
+			tl_2010_18157_tabblock10 = {
+				data: API.shapefile("tl_2010_18157_tabblock10"),
+				minZoom: 10.0,
+				maxZoom: undefined,
+			},
 		];
 
 		let container = document.getElementById('map');
 
 		let map = L.map(container, {
-			center: center,
-			zoom: zoom,
 			zoomSnap: 0.25,
 			zoomDelta: 0.25,
 			boxZoom: false,
 			doubleClickZoom: false,
-		});
-
-		L.control.distringo({ position: 'topright' }).addTo(map);
-
-		window.addEventListener('unload', e => {
-			let mapState = {
-				center: map.getCenter(),
-				zoom: map.getZoom(),
-			};
-
-			window.sessionStorage.mapState = JSON.stringify(mapState);
-		});
-
-		fetch('tl_2010_18157_tabblock10.geojson')
-			.then(response => response.json())
-			.then(geojsonObject => {
-				L.geoJSON(geojsonObject, {
-					style: (feature) => { return { weight: 1, color: '#404040', }; },
-					onEachFeature: (feature, layer) => {
-						layer.bindPopup((layer) => {
-							let table = L.DomUtil.create('table');
-
-							let properties = layer.feature.properties;
-
-							Object.keys(properties).forEach(key => {
-								let row = L.DomUtil.create('tr', '', table);
-								let label = L.DomUtil.create('td', '', row);
-								label.innerHTML = key;
-								let value = L.DomUtil.create('td', '', row);
-								value.innerHTML = properties[key];
-							});
-
-							return table;
-						}, {
-							closeOnClick: false,
-							autoClose: true,
-						});
-
-						layer.on('popupopen', (e) => {
-							layer.originalOptions = Object.assign({}, layer.options);
-							layer.setStyle({ fill: false, weight: 4 });
-						});
-
-						layer.on('popupclose', (e) => {
-							layer.setStyle(layer.originalOptions);
-							layer.redraw();
-							layer.originalOptions = undefined;
-						});
-
-						layer.on('click', (e) => {
-							if(e.originalEvent.shiftKey) {
-								console.log("Clicked with shift held!");
-								if(layer.isPopupOpen()) {
-									layer.closePopup();
-								}
-							}
-						});
-
-						layer.on('mousedown', (e) => {
-							map.isBeingDragged = true;
-						});
-
-						layer.on('mousemove', (e) => {
-							if(map.isBeingDragged && map.selecting) {
-								console.debug(e);
-								e.target.originalOptions = Object.assign({}, e.target.options);
-								e.target.setStyle({ fill: true, fillOpacity: 0.5,  fillColor: '#014A01', weight: 2, color: '#308C30', dashArray: '4 8' });
-								e.target.selected = true;
-							}
-						});
-
-						layer.on('mouseup', (e) => {
-							map.isBeingDragged = false;
-						});
-					}
-				}).addTo(map);
-			});
-
-		document.addEventListener('keydown', (e) => {
-			if(e.key == "Shift") {
-				container.classList.add("selecting");
-				map.selecting = true;
-			}
-		});
-
-		document.addEventListener('keyup', (e) => {
-			if(e.key == "Shift") {
-				container.classList.remove("selecting");
-				map.selecting = false;
-			}
 		});
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
