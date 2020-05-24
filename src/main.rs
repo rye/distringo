@@ -7,22 +7,51 @@ use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn routes() -> impl warp::Filter<Extract = impl warp::Reply> + Clone {
-	// GET / => (fs ./public/index.html)
+fn api_v0() -> warp::filters::BoxedFilter<(impl warp::Reply,)> {
+	let shapefiles_index = warp::get()
+		.and(warp::path::end())
+		.map(|| format!("shapefiles#index"));
+	let shapefiles_show = warp::get()
+		.and(warp::path!(String))
+		.map(|id: String| format!("shapefiles#show (id={:?})", id));
+	let shapefiles = warp::any()
+		.and(warp::path!("shapefiles" / ..))
+		.and(shapefiles_index.or(shapefiles_show));
+
+	let sessions_index = warp::get()
+		.and(warp::path::end())
+		.map(|| format!("sessions#index"));
+	let sessions_show = warp::get()
+		.and(warp::path!(String))
+		.map(|id: String| format!("sessions#show (id={:?})", id));
+	let sessions = warp::any()
+		.and(warp::path!("sessions" / ..))
+		.and(sessions_index.or(sessions_show));
+
+	let api = warp::path("api");
+	let api_v0 = api.and(warp::path("v0"));
+
+	let gets = shapefiles.or(sessions);
+
+	warp::any().and(api_v0).and(gets).boxed()
+}
+
+fn routes() -> warp::filters::BoxedFilter<(impl warp::Reply,)> {
 	let slash = warp::get()
 		.and(warp::path::end())
 		.and(warp::fs::file("./public/index.html"));
 
-	// GET /[path/to/files] => (fs ./public/[path/to/files])
 	let public_files = warp::get()
 		.and(warp::fs::dir("./public/"))
 		.and(warp::path::end());
 
-	// Compose the routes together.
+	let files = slash.or(public_files);
+
 	warp::any()
-		.and(warp::get().and(slash.or(public_files)))
+		.and(api_v0().or(files))
 		.with(warp::log("distringo"))
 		.recover(handle_rejection)
+		.boxed()
 }
 
 #[tokio::main]
