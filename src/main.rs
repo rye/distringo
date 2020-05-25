@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn api_v0(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
+fn shapefiles(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
 	let shapefiles: Arc<std::collections::HashMap<String, config::Value>> =
 		Arc::new(cfg.get_table("datasets")?);
 
@@ -29,7 +29,14 @@ fn api_v0(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl wa
 	// ... /api/v0/shapefiles/...
 	let shapefiles = warp::any()
 		.and(warp::path!("shapefiles" / ..))
-		.and(shapefiles_index.or(shapefiles_show));
+		.and(shapefiles_index.or(shapefiles_show))
+		.boxed();
+
+	Ok(shapefiles)
+}
+
+fn api_v0(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
+	let shapefiles = shapefiles(cfg)?;
 
 	let api = warp::path("api");
 	let api_v0 = api.and(warp::path("v0"));
