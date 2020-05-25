@@ -1,42 +1,48 @@
 use config::Config;
 use hyper::StatusCode;
 use log::warn;
-use std::sync::Arc;
 
 use std::net::IpAddr;
 use std::net::SocketAddr;
 
 use warp::{Filter, Rejection, Reply};
 
-fn shapefiles(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
-	let shapefiles: Arc<std::collections::HashMap<String, config::Value>> =
-		Arc::new(cfg.get_table("datasets")?);
+mod routes {
+	use std::sync::Arc;
+	use warp::Filter;
 
-	// GET /api/v0/shapefiles
-	let shapefiles_index = {
-		let shapefiles = shapefiles.clone();
-		warp::get()
-			.and(warp::path::end())
-			.map(move || warp::reply::json(&shapefiles.keys().collect::<Vec<&String>>()))
-	};
-	// GET /api/v0/shapefiles/:id
-	let shapefiles_show = {
-		let shapefiles = shapefiles.clone();
-		warp::get()
-			.and(warp::path!(String))
-			.map(move |id: String| format!("shapefiles#show (id={:?}): {:?}", id, shapefiles.get(&id)))
-	};
-	// ... /api/v0/shapefiles/...
-	let shapefiles = warp::any()
-		.and(warp::path!("shapefiles" / ..))
-		.and(shapefiles_index.or(shapefiles_show))
-		.boxed();
+	pub fn shapefiles(
+		cfg: &config::Config,
+	) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
+		let shapefiles: Arc<std::collections::HashMap<String, config::Value>> =
+			Arc::new(cfg.get_table("datasets")?);
 
-	Ok(shapefiles)
+		// GET /api/v0/shapefiles
+		let shapefiles_index = {
+			let shapefiles = shapefiles.clone();
+			warp::get()
+				.and(warp::path::end())
+				.map(move || warp::reply::json(&shapefiles.keys().collect::<Vec<&String>>()))
+		};
+		// GET /api/v0/shapefiles/:id
+		let shapefiles_show = {
+			let shapefiles = shapefiles.clone();
+			warp::get()
+				.and(warp::path!(String))
+				.map(move |id: String| format!("shapefiles#show (id={:?}): {:?}", id, shapefiles.get(&id)))
+		};
+		// ... /api/v0/shapefiles/...
+		let shapefiles = warp::any()
+			.and(warp::path!("shapefiles" / ..))
+			.and(shapefiles_index.or(shapefiles_show))
+			.boxed();
+
+		Ok(shapefiles)
+	}
 }
 
 fn api_v0(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
-	let shapefiles = shapefiles(cfg)?;
+	let shapefiles = routes::shapefiles(cfg)?;
 
 	let api = warp::path("api");
 	let api_v0 = api.and(warp::path("v0"));
