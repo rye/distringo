@@ -30,12 +30,18 @@
 
 		let container = document.getElementById('map');
 
+		console.info("Initializing the map");
+
 		let map = L.map(container, {
+			center: [0.0, 0.0],
+			zoom: 0,
 			zoomSnap: 0.25,
 			zoomDelta: 0.25,
 			boxZoom: false,
 			doubleClickZoom: false,
 		});
+
+		console.info("Adding OSM tile set");
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
