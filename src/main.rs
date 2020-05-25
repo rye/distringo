@@ -12,24 +12,19 @@ fn api_v0(cfg: &Config) -> distringo::Result<warp::filters::BoxedFilter<(impl wa
 	let shapefiles: Arc<std::collections::HashMap<String, config::Value>> =
 		Arc::new(cfg.get_table("datasets")?);
 
+	// GET /api/v0/shapefiles
 	let shapefiles_index = {
 		let shapefiles = shapefiles.clone();
-		// GET /api/v0/shapefiles
 		warp::get()
 			.and(warp::path::end())
-			.map(move || format!("{:?}", shapefiles.clone().keys()))
+			.map(move || warp::reply::json(&shapefiles.keys().collect::<Vec<&String>>()))
 	};
-
 	// GET /api/v0/shapefiles/:id
 	let shapefiles_show = {
 		let shapefiles = shapefiles.clone();
-		warp::get().and(warp::path!(String)).map(move |id: String| {
-			format!(
-				"shapefiles#show (id={:?}): {:?}",
-				id,
-				shapefiles.clone().get(&id)
-			)
-		})
+		warp::get()
+			.and(warp::path!(String))
+			.map(move |id: String| format!("shapefiles#show (id={:?}): {:?}", id, shapefiles.get(&id)))
 	};
 	// ... /api/v0/shapefiles/...
 	let shapefiles = warp::any()
