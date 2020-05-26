@@ -317,6 +317,7 @@ dependencies = [
  "criterion",
  "csv",
  "fnv",
+ "http",
  "hyper",
  "lazy_static",
  "log 0.4.8",
