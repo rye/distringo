@@ -317,6 +317,8 @@ dependencies = [
  "criterion",
  "csv",
  "fnv",
+ "geo",
+ "geojson",
  "http",
  "hyper",
  "lazy_static",
@@ -491,6 +493,38 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c68f0274ae0e023facc3c97b2e00f076be70e254bc851d972503b328db79b2ec"
 dependencies = [
  "typenum",
+]
+
+[[package]]
+name = "geo"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6315f3b85322e42fc9967e0f080fff8294f65eddfc222f1a1dd694955b04df4d"
+dependencies = [
+ "geo-types",
+ "num-traits",
+ "rstar",
+]
+
+[[package]]
+name = "geo-types"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0ff051e4c51366601441053c37acf84958a795d350fdc02a53a31717f9bae2d"
+dependencies = [
+ "num-traits",
+ "rstar",
+]
+
+[[package]]
+name = "geojson"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2b6970b36b77807a4ea232fcbc13b29026eab7c7e906500446c1e03d16f43af"
+dependencies = [
+ "num-traits",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -927,6 +961,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
 
 [[package]]
+name = "pdqselect"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec91767ecc0a0bbe558ce8c9da33c068066c57ecc8bb8477ef8c1ad3ef77c27"
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1287,6 +1327,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a83fa3702a688b9359eccba92d153ac33fd2e8462f9e0e3fdf155239ea7792e"
 dependencies = [
  "winapi 0.3.8",
+]
+
+[[package]]
+name = "rstar"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0650eaaa56cbd1726fd671150fce8ac6ed9d9a25d1624430d7ee9d196052f6b6"
+dependencies = [
+ "num-traits",
+ "pdqselect",
 ]
 
 [[package]]

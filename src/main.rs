@@ -14,30 +14,66 @@ pub mod routes {
 			use warp::Filter;
 
 			pub mod shapefiles {
+				use core::convert::TryFrom;
+				use geojson::GeoJson;
+				use std::path::Path;
 				use std::sync::Arc;
 
+				#[derive(Debug, serde::Deserialize, serde::Serialize)]
+				#[serde(rename_all = "snake_case")]
+				pub enum ShapefileType {
+					#[serde(alias = "tabblock")]
+					TabularBlock,
+				}
+
+				#[derive(Debug)]
+				pub struct Shapefile {
+					ty: ShapefileType,
+					data: GeoJson,
+				}
+
+				#[derive(serde::Serialize, serde::Deserialize)]
+				pub struct ShapefileConfiguration {
+					#[serde(rename = "type")]
+					ty: ShapefileType,
+					file: String,
+				}
+
+				impl Shapefile {
+					pub fn from_file<P: AsRef<Path>>(ty: ShapefileType, path: P) -> distringo::Result<Self> {
+						let data = std::fs::read_to_string(path)?.parse::<GeoJson>()?;
+
+						Ok(Self { ty, data })
+					}
+				}
+
+				impl TryFrom<ShapefileConfiguration> for Shapefile {
+					type Error = distringo::Error;
+
+					fn try_from(sc: ShapefileConfiguration) -> distringo::Result<Self> {
+						Self::from_file(sc.ty, sc.file)
+					}
+				}
+
 				pub fn index(
-					shapefiles: &Arc<std::collections::HashMap<String, config::Value>>,
+					shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>,
 				) -> impl warp::Reply {
 					warp::reply::json(&shapefiles.keys().collect::<Vec<&String>>())
 				}
 
 				// TODO(rye): Change signature: shapefile: &Shapefile -> http::Response<String>
 				pub fn show(
-					shapefiles: &Arc<std::collections::HashMap<String, config::Value>>,
+					shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>,
 					id: &String,
 				) -> hyper::Response<String> {
-					if let Some(config) = shapefiles.get(id) {
-						// let table = config.into_table()?;
-
-						// TODO(rye): load the data
-						// TODO(rye): just keep an in-memory stash of the shapefiles and refute booting if files in config don't exist? (better)
-						let data: String = "{}".to_string();
+					if let Some(shapefile) = shapefiles.get(id) {
+						let data: String = shapefile.data.to_string();
 
 						let response = {
 							http::response::Builder::new()
 								.status(hyper::StatusCode::OK)
-								.header("Content-Type", "application/vnd.geo+json")
+								.header(hyper::header::CONTENT_TYPE, "application/vnd.geo+json")
+								.header(hyper::header::CACHE_CONTROL, "public ")
 								// TODO(rye): Clean up error path
 								.body(data)
 								.unwrap()
@@ -49,7 +85,7 @@ pub mod routes {
 
 						let response = {
 							http::response::Builder::new()
-								.status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
+								.status(hyper::StatusCode::NOT_FOUND)
 								.body("{}".to_string())
 								.unwrap()
 						};
@@ -62,8 +98,32 @@ pub mod routes {
 			pub fn shapefiles(
 				cfg: &config::Config,
 			) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
-				let shapefiles: Arc<std::collections::HashMap<String, config::Value>> =
-					Arc::new(cfg.get_table("datasets")?);
+				let shapefiles: std::collections::HashMap<String, config::Value> =
+					cfg.get_table("shapefiles")?;
+
+				use core::convert::TryInto;
+				use shapefiles::{Shapefile, ShapefileConfiguration};
+
+				let shapefiles: std::collections::HashMap<String, Shapefile> = shapefiles
+					.iter()
+					.filter_map(
+						|(id, value): (&String, &config::Value)| -> Option<(String, Shapefile)> {
+							// TODO(rye): avoid clone by iterating over keys and using remove?
+							let value: config::Value = value.clone();
+							// TODO(rye): handle error a bit better
+							let config: ShapefileConfiguration = value.try_into().expect("invalid configuration");
+							let shapefile: distringo::Result<Shapefile> = config.try_into();
+							if let Ok(shapefile) = shapefile {
+								Some((id.to_string(), shapefile))
+							} else {
+								log::warn!("Error parsing shapefile {}: {:?}", id, shapefile);
+								None
+							}
+						},
+					)
+					.collect();
+
+				let shapefiles: Arc<std::collections::HashMap<String, Shapefile>> = Arc::new(shapefiles);
 
 				// GET /api/v0/shapefiles
 				let shapefiles_index = {

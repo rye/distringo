@@ -7,6 +7,7 @@ pub enum Error {
 	Io(io::Error),
 	Csv(csv::Error),
 	Config(config::ConfigError),
+	GeoJson(geojson::Error),
 	ParseInt(num::ParseIntError),
 
 	InvalidServerHost,
@@ -30,6 +31,12 @@ impl From<csv::Error> for Error {
 impl From<config::ConfigError> for Error {
 	fn from(e: config::ConfigError) -> Error {
 		Self::Config(e)
+	}
+}
+
+impl From<geojson::Error> for Error {
+	fn from(e: geojson::Error) -> Error {
+		Self::GeoJson(e)
 	}
 }
 
