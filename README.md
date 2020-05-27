@@ -9,6 +9,43 @@ Distringo aims to provide an option that makes no compromises on performance.
 
 More to come later.
 
+## Roadmap to v0.1.0
+
+### Datasets
+
+- [x] lib: Datasets can be parsed
+- [x] lib: Datasets can be loaded
+- [ ] main: Datasets can be queried via an "Index" action (returning an array of `id`s that can be queried)
+- [ ] main+lib: Datasets can be queried via a "Show" action (returning the serialized representation of the data)
+- [ ] main+lib: Logical records (rows of Datasets) can be queried via a "Show" action (returning the tables)
+- [ ] main+lib: Dictionaries can be queried
+
+### Shapefiles
+
+- [ ] lib: Shapefiles can be parsed
+- [ ] lib: Shapefiles can be loaded
+  - [ ] Tabular Block (`tabblock`)
+  - [ ] Block Group (`bg`)
+- [ ] main+lib: Shapefiles can be queried via an "Index" action (returning an array of `id`s that can be queried)
+- [ ] main+lib: Shapefiles can be queried via a "Show" action (returning the body of the shapefile)
+- [ ] main+lib: Blocks can be queried from the in-memory `Shapefile` structures in `O(1)` time.
+- [ ] main+lib: Tables can be retrieved from the in-memory `Shapefile` structures in `O(1)` time.
+
+### Computations
+
+- [ ] main+lib: Clients can request the "Convex Hull" of a JSON array of Polygon objects.
+- [ ] main+lib: Clients can request the "Convex Hull" of a JSON array of Block identifiers.
+
+### Sessions
+
+- [ ] main: Sessions can be configured
+- [ ] public: The client can change sessions
+
+### Extra
+
+- [ ] Every route under `/api/v0` is documented in its own documentation.
+- [ ] An example instance is deployed (production and staging) under `distringo.rye.systems`.
+
 ## License
 
 Distringo is released under the terms of the MIT License.
