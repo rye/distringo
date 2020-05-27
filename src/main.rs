@@ -67,7 +67,12 @@ pub mod routes {
 					id: &String,
 				) -> hyper::Response<String> {
 					if let Some(shapefile) = shapefiles.get(id) {
+						let t0: std::time::Instant = std::time::Instant::now();
+
+						// TODO(rye): Figure out how to send this more efficiently; this takes about 3 seconds.
 						let data: String = shapefile.data.to_string();
+
+						let t1: std::time::Instant = std::time::Instant::now();
 
 						let response = {
 							http::response::Builder::new()
@@ -78,6 +83,14 @@ pub mod routes {
 								.body(data)
 								.unwrap()
 						};
+
+						let t2: std::time::Instant = std::time::Instant::now();
+
+						log::trace!(
+							"Prepared data in {}ns, response in {}ns",
+							t1.duration_since(t0).as_nanos(),
+							t2.duration_since(t1).as_nanos()
+						);
 
 						response
 					} else {
