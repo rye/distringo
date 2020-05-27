@@ -138,6 +138,7 @@ pub mod routes {
 					warp::get()
 						.and(warp::path!(String))
 						.map(move |id: String| shapefiles::show(&shapefiles, &id))
+						.with(warp::compression::gzip())
 				};
 				// ... /api/v0/shapefiles/...
 				let shapefiles = warp::any()
