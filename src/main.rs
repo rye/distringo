@@ -29,7 +29,8 @@ pub mod routes {
 				#[derive(Debug)]
 				pub struct Shapefile {
 					ty: ShapefileType,
-					data: GeoJson,
+					contents: GeoJson,
+					data: hyper::body::Bytes,
 				}
 
 				#[derive(serde::Serialize, serde::Deserialize)]
@@ -41,9 +42,10 @@ pub mod routes {
 
 				impl Shapefile {
 					pub fn from_file<P: AsRef<Path>>(ty: ShapefileType, path: P) -> distringo::Result<Self> {
-						let data = std::fs::read_to_string(path)?.parse::<GeoJson>()?;
+						let contents = std::fs::read_to_string(path)?.parse::<GeoJson>()?;
+						let data = contents.to_string().into();
 
-						Ok(Self { ty, data })
+						Ok(Self { ty, contents, data })
 					}
 				}
 
@@ -61,16 +63,15 @@ pub mod routes {
 					warp::reply::json(&shapefiles.keys().collect::<Vec<&String>>())
 				}
 
-				// TODO(rye): Change signature: shapefile: &Shapefile -> http::Response<String>
 				pub fn show(
 					shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>,
 					id: &String,
-				) -> hyper::Response<String> {
+				) -> hyper::Response<hyper::body::Bytes> {
 					if let Some(shapefile) = shapefiles.get(id) {
 						let t0: std::time::Instant = std::time::Instant::now();
 
 						// TODO(rye): Figure out how to send this more efficiently; this takes about 3 seconds.
-						let data: String = shapefile.data.to_string();
+						let data = shapefile.data.clone();
 
 						let t1: std::time::Instant = std::time::Instant::now();
 
@@ -99,7 +100,7 @@ pub mod routes {
 						let response = {
 							http::response::Builder::new()
 								.status(hyper::StatusCode::NOT_FOUND)
-								.body("{}".to_string())
+								.body("{}".to_string().into())
 								.unwrap()
 						};
 
