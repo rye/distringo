@@ -15,10 +15,12 @@ pub fn routes(
 
 	let files = slash.or(public_files);
 
+	let logging = warp::log("distringo");
+
 	Ok(
 		warp::any()
 			.and(api::api(cfg)?.or(files))
-			.with(warp::log("distringo"))
+			.with(logging)
 			.recover(crate::server::handle_rejection)
 			.boxed(),
 	)
