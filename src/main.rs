@@ -79,7 +79,7 @@ pub mod routes {
 							http::response::Builder::new()
 								.status(hyper::StatusCode::OK)
 								.header(hyper::header::CONTENT_TYPE, "application/vnd.geo+json")
-								.header(hyper::header::CACHE_CONTROL, "public ")
+								.header(hyper::header::CACHE_CONTROL, "public")
 								// TODO(rye): Clean up error path
 								.body(data)
 								.unwrap()
