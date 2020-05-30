@@ -84,13 +84,9 @@ pub fn show(
 	} else {
 		log::debug!("{:?}", shapefiles);
 
-		let response = {
-			http::response::Builder::new()
-				.status(hyper::StatusCode::NOT_FOUND)
-				.body("{}".to_string().into())
-				.unwrap()
-		};
-
-		response
+		http::response::Builder::new()
+			.status(hyper::StatusCode::NOT_FOUND)
+			.body("{}".to_string().into())
+			.unwrap()
 	}
 }
