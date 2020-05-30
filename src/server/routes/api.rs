@@ -42,6 +42,7 @@ pub fn shapefiles(
 	};
 	// GET /api/v0/shapefiles/:id
 	let shapefiles_show = {
+		#[allow(clippy::redundant_clone)]
 		let shapefiles = shapefiles.clone();
 		warp::get()
 			.and(warp::path!(String))
