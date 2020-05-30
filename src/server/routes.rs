@@ -13,9 +13,10 @@ pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply
 
 	let logging = warp::log("distringo");
 
+	let all_routes = api::api(cfg)?.or(files);
+
 	Ok(
-		warp::any()
-			.and(api::api(cfg)?.or(files))
+		all_routes
 			.with(logging)
 			.recover(crate::server::handle_rejection)
 			.boxed(),
