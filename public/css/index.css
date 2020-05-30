@@ -12,3 +12,7 @@ div.distringo-controls.collapsed {
 div.selecting .leaflet-interactive {
 	cursor: cell !important;
 }
+
+.leaflet-container {
+	font-family: 'B612', sans-serif;
+}
