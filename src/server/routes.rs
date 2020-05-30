@@ -18,7 +18,7 @@ pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply
 	Ok(
 		all_routes
 			.with(logging)
-			.recover(crate::server::handle_rejection)
+			.recover(super::handle_rejection)
 			.boxed(),
 	)
 }
