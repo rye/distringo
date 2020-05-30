@@ -1,15 +1,13 @@
 pub mod api;
 
-use warp::{filters::BoxedFilter, Filter, Reply};
+use warp::{filters::BoxedFilter, fs, path, Filter, Reply};
 
 pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply,)>> {
 	let slash = warp::get()
-		.and(warp::path::end())
-		.and(warp::fs::file("./public/index.html"));
+		.and(path::end())
+		.and(fs::file("./public/index.html"));
 
-	let public_files = warp::get()
-		.and(warp::fs::dir("./public/"))
-		.and(warp::path::end());
+	let public_files = warp::get().and(fs::dir("./public/")).and(path::end());
 
 	let files = slash.or(public_files);
 
