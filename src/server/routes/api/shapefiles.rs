@@ -52,7 +52,12 @@ pub fn show(
 	if let Some(shapefile) = shapefiles.get(id) {
 		let t0: std::time::Instant = std::time::Instant::now();
 
-		// TODO(rye): Figure out how to send this more efficiently; this takes about 3 seconds.
+		// This line _does not_ "clone" the entire data.
+		//
+		// `shapefile.data` is a reference-counted thing which is pre-filled at
+		// startup time before this function can be called.  This means we can
+		// pretty easily get ahold of an owned `Bytes` structure surrounding the
+		// thing.
 		let data = shapefile.data.clone();
 
 		let t1: std::time::Instant = std::time::Instant::now();
