@@ -1,10 +1,8 @@
 pub mod api;
 
-use warp::Filter;
+use warp::{filters::BoxedFilter, Filter, Reply};
 
-pub fn routes(
-	cfg: &config::Config,
-) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
+pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply,)>> {
 	let slash = warp::get()
 		.and(warp::path::end())
 		.and(warp::fs::file("./public/index.html"));
