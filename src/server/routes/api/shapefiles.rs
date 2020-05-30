@@ -47,7 +47,7 @@ pub fn index(shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>) -> 
 
 pub fn show(
 	shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>,
-	id: &String,
+	id: &str,
 ) -> hyper::Response<hyper::body::Bytes> {
 	if let Some(shapefile) = shapefiles.get(id) {
 		let t0: std::time::Instant = std::time::Instant::now();
