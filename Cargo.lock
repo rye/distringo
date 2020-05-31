@@ -386,7 +386,6 @@ dependencies = [
  "geojson",
  "lazy_static",
  "log 0.4.8",
- "pretty_env_logger",
  "regex",
  "serde",
  "serde_yaml",
@@ -1538,10 +1537,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "config",
- "criterion",
- "csv",
  "distringo",
- "fnv",
  "geo",
  "geojson",
  "http",
@@ -1549,10 +1545,7 @@ dependencies = [
  "lazy_static",
  "log 0.4.8",
  "pretty_env_logger",
- "regex",
  "serde",
- "serde_yaml",
- "simple_logger",
  "tokio",
  "warp",
 ]
