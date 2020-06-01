@@ -90,3 +90,50 @@ pub fn show(
 			.unwrap()
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::{Shapefile, ShapefileType};
+	#[cfg(test)]
+	mod show {
+		use super::{Shapefile, ShapefileType};
+		use geojson::{GeoJson, Geometry, Value::Point};
+		use std::collections::HashMap;
+		use std::sync::Arc;
+
+		fn generate_id_and_shapefiles() -> (String, Arc<HashMap<String, Shapefile>>) {
+			let shapefile = Shapefile {
+				ty: ShapefileType::TabularBlock,
+				contents: GeoJson::Geometry(Geometry::new(Point(vec![0.0_f64, 0.0_f64]))),
+				data: hyper::body::Bytes::default(),
+			};
+
+			let id = "id".to_string();
+			let map = {
+				let mut hs = HashMap::new();
+				hs.insert(id.clone(), shapefile);
+				Arc::new(hs)
+			};
+
+			(id, map)
+		}
+
+		#[test]
+		fn found_returns_200_ok() {
+			let (id, map) = generate_id_and_shapefiles();
+
+			let response = super::super::show(&map, &id);
+
+			assert_eq!(response.status(), hyper::StatusCode::OK);
+		}
+
+		#[test]
+		fn not_found_returns_404() {
+			let (_id, map) = generate_id_and_shapefiles();
+
+			let response = super::super::show(&map, &"<some unknown id>".to_string());
+
+			assert_eq!(response.status(), hyper::StatusCode::NOT_FOUND);
+		}
+	}
+}

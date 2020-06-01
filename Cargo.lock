@@ -384,17 +384,12 @@ dependencies = [
  "fnv",
  "geo",
  "geojson",
- "http",
- "hyper",
  "lazy_static",
  "log 0.4.8",
- "pretty_env_logger",
  "regex",
  "serde",
  "serde_yaml",
  "simple_logger",
- "tokio",
- "warp",
 ]
 
 [[package]]
@@ -1535,6 +1530,24 @@ dependencies = [
  "linked-hash-map",
  "serde",
  "yaml-rust",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "distringo",
+ "geo",
+ "geojson",
+ "http",
+ "hyper",
+ "lazy_static",
+ "log 0.4.8",
+ "pretty_env_logger",
+ "serde",
+ "tokio",
+ "warp",
 ]
 
 [[package]]
