@@ -102,10 +102,11 @@ mod tests {
 		use std::sync::Arc;
 
 		fn generate_id_and_shapefiles() -> (String, Arc<HashMap<String, Shapefile>>) {
+			let contents = GeoJson::Geometry(Geometry::new(Point(vec![0.0_f64, 0.0_f64])));
 			let shapefile = Shapefile {
 				ty: ShapefileType::TabularBlock,
-				contents: GeoJson::Geometry(Geometry::new(Point(vec![0.0_f64, 0.0_f64]))),
-				data: hyper::body::Bytes::default(),
+				data: contents.to_string().into(),
+				contents,
 			};
 
 			let id = "id".to_string();
@@ -121,10 +122,38 @@ mod tests {
 		#[test]
 		fn found_returns_200_ok() {
 			let (id, map) = generate_id_and_shapefiles();
-
 			let response = super::super::show(&map, &id);
-
 			assert_eq!(response.status(), hyper::StatusCode::OK);
+		}
+
+		#[test]
+		fn found_returns_correct_headers() {
+			let (id, map) = generate_id_and_shapefiles();
+			let response = super::super::show(&map, &id);
+			assert_eq!(
+				response
+					.headers()
+					.get(hyper::header::CONTENT_TYPE)
+					.expect("missing content-type header"),
+				"application/vnd.geo+json"
+			);
+			assert_eq!(
+				response
+					.headers()
+					.get(hyper::header::CACHE_CONTROL)
+					.expect("missing cache-control header"),
+				"public"
+			);
+		}
+
+		#[test]
+		fn found_returns_correct_body() {
+			let (id, map) = generate_id_and_shapefiles();
+			let response = super::super::show(&map, &id);
+			assert_eq!(
+				response.body(),
+				"{\"coordinates\":[0.0,0.0],\"type\":\"Point\"}"
+			);
 		}
 
 		#[test]
