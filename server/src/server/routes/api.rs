@@ -1,6 +1,7 @@
 use shapefiles::{Shapefile, ShapefileConfiguration};
 
 use core::convert::TryInto;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use warp::Filter;
@@ -10,9 +11,9 @@ pub mod shapefiles;
 pub fn shapefiles(
 	cfg: &config::Config,
 ) -> distringo::Result<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
-	let shapefiles: std::collections::HashMap<String, config::Value> = cfg.get_table("shapefiles")?;
+	let shapefiles: HashMap<String, config::Value> = cfg.get_table("shapefiles")?;
 
-	let shapefiles: std::collections::HashMap<String, Shapefile> = shapefiles
+	let shapefiles: HashMap<String, Shapefile> = shapefiles
 		.iter()
 		.filter_map(
 			|(id, value): (&String, &config::Value)| -> Option<(String, Shapefile)> {
@@ -31,7 +32,7 @@ pub fn shapefiles(
 		)
 		.collect();
 
-	let shapefiles: Arc<std::collections::HashMap<String, Shapefile>> = Arc::new(shapefiles);
+	let shapefiles: Arc<HashMap<String, Shapefile>> = Arc::new(shapefiles);
 
 	// GET /api/v0/shapefiles
 	let shapefiles_index = {
