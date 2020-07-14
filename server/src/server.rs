@@ -1,8 +1,10 @@
+pub use distringo::Result;
+
 pub mod routes;
 
 pub fn server(
 	settings: &config::Config,
-) -> distringo::Result<warp::Server<impl warp::Filter<Extract = impl warp::Reply> + Clone>> {
+) -> Result<warp::Server<impl warp::Filter<Extract = impl warp::Reply> + Clone>> {
 	Ok(warp::serve(routes::routes(settings)?))
 }
 
@@ -20,5 +22,47 @@ async fn handle_rejection(
 			warp::reply::html(include_str!("500.html")),
 			http::StatusCode::INTERNAL_SERVER_ERROR,
 		))
+	}
+}
+
+pub struct ExecutionPlan(config::Config);
+
+impl From<config::Config> for ExecutionPlan {
+	fn from(config: config::Config) -> Self {
+		Self(config)
+	}
+}
+
+impl ExecutionPlan {
+	pub fn check(&self) -> Result<()> {
+		// TODO(rye): Instead of doing nothing, perform a dry run of creating the
+		// routes here so as to early-die if something is amiss.
+		//
+		// (Ideally, reduce the contract of execute())
+
+		Ok(())
+	}
+
+	pub async fn execute(&mut self) -> Result<()> {
+		use std::net::{IpAddr, SocketAddr};
+
+		let socket = {
+			use core::convert::TryInto;
+
+			let config: &config::Config = &self.0;
+
+			let host: IpAddr = config
+				.get_str("server.host")?
+				.parse()
+				.map_err(|_| distringo::Error::InvalidServerHost)?;
+			let port: u16 = config
+				.get_int("server.port")?
+				.try_into()
+				.map_err(|_| distringo::Error::InvalidServerPort)?;
+
+			SocketAddr::new(host, port)
+		};
+
+		Ok(server(&self.0)?.run(socket).await)
 	}
 }

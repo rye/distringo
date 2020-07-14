@@ -1,8 +1,3 @@
-use config::Config;
-
-use std::net::IpAddr;
-use std::net::SocketAddr;
-
 pub mod server;
 
 #[tokio::main]
@@ -13,31 +8,22 @@ async fn main() -> distringo::Result<()> {
 
 	pretty_env_logger::init_custom_env("DISTRINGO_LOG");
 
-	let mut settings = Config::default();
+	let settings = {
+		use config::{Config, Environment, File};
 
-	settings.set_default("server.host", "::")?;
-	settings.set_default("server.port", 2020)?;
+		let mut settings = Config::default();
 
-	settings.merge(config::Environment::with_prefix("DISTRINGO"))?;
+		settings.set_default("server.host", "::")?;
+		settings.set_default("server.port", 2020)?;
 
-	settings.merge(config::File::with_name("config"))?;
+		settings.merge(Environment::with_prefix("DISTRINGO"))?;
 
-	let socket = {
-		use core::convert::TryInto;
+		settings.merge(File::with_name("config"))?;
 
-		let host: IpAddr = settings
-			.get_str("server.host")?
-			.parse()
-			.map_err(|_| distringo::Error::InvalidServerHost)?;
-		let port: u16 = settings
-			.get_int("server.port")?
-			.try_into()
-			.map_err(|_| distringo::Error::InvalidServerPort)?;
-
-		SocketAddr::new(host, port)
+		settings
 	};
 
-	server::server(&settings)?.run(socket).await;
-
-	Ok(())
+	let mut plan: server::ExecutionPlan = settings.into();
+	plan.check()?;
+	plan.execute().await
 }
