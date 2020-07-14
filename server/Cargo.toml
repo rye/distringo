@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 config = { version = "~0.10.1", default_features = false, features = ["json", "yaml"] }
-geo = "~0.14.0"
+geo = "~0.14.1"
 geojson = "~0.19.0"
 http = "~0.2.1"
 hyper = "~0.13.7"
