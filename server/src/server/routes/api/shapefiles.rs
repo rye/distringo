@@ -27,6 +27,8 @@ pub struct ShapefileConfiguration {
 impl Shapefile {
 	pub fn from_file<P: AsRef<Path>>(ty: ShapefileType, path: P) -> distringo::Result<Self> {
 		let contents = std::fs::read_to_string(path)?.parse::<GeoJson>()?;
+
+		// TODO(rye): Avoid re-allocating as a String by having a more "streamable" result.
 		let data = contents.to_string().into();
 
 		Ok(Self { ty, contents, data })
@@ -50,8 +52,6 @@ pub fn show(
 	id: &str,
 ) -> hyper::Response<hyper::body::Bytes> {
 	if let Some(shapefile) = shapefiles.get(id) {
-		let t0: std::time::Instant = std::time::Instant::now();
-
 		// This line _does not_ "clone" the entire data.
 		//
 		// `shapefile.data` is a reference-counted thing which is pre-filled at
@@ -59,8 +59,6 @@ pub fn show(
 		// pretty easily get ahold of an owned `Bytes` structure surrounding the
 		// thing.
 		let data = shapefile.data.clone();
-
-		let t1: std::time::Instant = std::time::Instant::now();
 
 		let response = {
 			http::response::Builder::new()
@@ -72,21 +70,13 @@ pub fn show(
 				.unwrap()
 		};
 
-		let t2: std::time::Instant = std::time::Instant::now();
-
-		log::trace!(
-			"Prepared data in {}ns, response in {}ns",
-			t1.duration_since(t0).as_nanos(),
-			t2.duration_since(t1).as_nanos()
-		);
-
 		response
 	} else {
 		log::debug!("{:?}", shapefiles);
 
 		http::response::Builder::new()
 			.status(hyper::StatusCode::NOT_FOUND)
-			.body("{}".to_string().into())
+			.body("{}".into())
 			.unwrap()
 	}
 }
