@@ -1,6 +1,6 @@
-pub mod api;
-
 use warp::{filters::BoxedFilter, fs, path, Filter, Reply};
+
+pub mod api;
 
 pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply,)>> {
 	let slash = warp::get()
@@ -9,16 +9,15 @@ pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply
 
 	let public_files = warp::get().and(fs::dir("./public/")).and(path::end());
 
-	let files = slash.or(public_files);
+	let file_routes = slash.or(public_files);
 
-	let logging = warp::log("distringo");
+	let api_routes = api::api(cfg)?;
 
-	let all_routes = api::api(cfg)?.or(files);
+	let root = api_routes
+		.or(file_routes)
+		.with(warp::log("distringo"))
+		.recover(super::handle_rejection)
+		.boxed();
 
-	Ok(
-		all_routes
-			.with(logging)
-			.recover(super::handle_rejection)
-			.boxed(),
-	)
+	Ok(root)
 }
