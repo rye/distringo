@@ -124,8 +124,10 @@ mod tests {
 			let map: &'static HashMap<String, Shapefile> = {
 				use core::mem::MaybeUninit;
 				static mut INNER: MaybeUninit<HashMap<String, Shapefile>> = MaybeUninit::uninit();
-				unsafe { INNER = MaybeUninit::new(HashMap::new()) };
-				unsafe { &mut *INNER.as_mut_ptr() }.insert(id.clone(), shapefile);
+				std::sync::Once::new().call_once(|| {
+					unsafe { INNER = MaybeUninit::new(HashMap::new()) };
+					unsafe { &mut *INNER.as_mut_ptr() }.insert(id.clone(), shapefile);
+				});
 				unsafe { &*INNER.as_ptr() }
 			};
 
