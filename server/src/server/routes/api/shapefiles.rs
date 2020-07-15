@@ -30,8 +30,7 @@ impl<'buffer> futures::Stream for ByteChunkStream<'buffer> {
 	type Item = Result<&'buffer [u8], std::convert::Infallible>;
 
 	fn poll_next(self: Pin<&mut Self>, _ctx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		let next: Option<Result<&'buffer [u8], _>> =
-			self.get_mut().iterator.next().map(|chunk| Ok(chunk));
+		let next: Option<Result<&'buffer [u8], _>> = self.get_mut().iterator.next().map(Ok);
 		Poll::Ready(next)
 	}
 }
