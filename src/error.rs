@@ -14,7 +14,21 @@ pub enum Error {
 	InvalidServerPort,
 }
 
+impl core::fmt::Display for Error {
+	fn fmt(&self, f: &mut core::fmt::Formatter) -> core::result::Result<(), std::fmt::Error> {
+		match self {
+			Error::Io(inner) => writeln!(f, "io error: {}", inner),
+			Error::Csv(inner) => writeln!(f, "csv error: {}", inner),
+			Error::Config(inner) => writeln!(f, "config error: {}", inner),
+			Error::GeoJson(inner) => writeln!(f, "geojson error: {}", inner),
+			_ => todo!(),
+		}
+	}
+}
+
 pub type Result<T> = result::Result<T, Error>;
+
+impl std::error::Error for Error {}
 
 impl From<io::Error> for Error {
 	fn from(e: io::Error) -> Error {

@@ -1,7 +1,6 @@
 use core::convert::TryFrom;
 use geojson::GeoJson;
 use std::path::Path;
-use std::sync::Arc;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -10,11 +9,38 @@ pub enum ShapefileType {
 	TabularBlock,
 }
 
+pub struct ByteChunkStream<'buffer> {
+	iterator: std::slice::Chunks<'buffer, u8>,
+}
+
+impl<'buffer> ByteChunkStream<'buffer> {
+	fn new(buf: &'buffer str, chunk_size: usize) -> Self {
+		Self {
+			iterator: buf.as_bytes().chunks(chunk_size),
+		}
+	}
+}
+
+use std::{
+	pin::Pin,
+	task::{Context, Poll},
+};
+
+impl<'buffer> futures::Stream for ByteChunkStream<'buffer> {
+	type Item = Result<&'buffer [u8], std::convert::Infallible>;
+
+	fn poll_next(self: Pin<&mut Self>, _ctx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		let next: Option<Result<&'buffer [u8], _>> =
+			self.get_mut().iterator.next().map(|chunk| Ok(chunk));
+		Poll::Ready(next)
+	}
+}
+
 #[derive(Debug)]
 pub struct Shapefile {
 	ty: ShapefileType,
 	contents: GeoJson,
-	data: hyper::body::Bytes,
+	data: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -29,7 +55,7 @@ impl Shapefile {
 		let contents = std::fs::read_to_string(path)?.parse::<GeoJson>()?;
 
 		// TODO(rye): Avoid re-allocating as a String by having a more "streamable" result.
-		let data = contents.to_string().into();
+		let data = contents.to_string();
 
 		Ok(Self { ty, contents, data })
 	}
@@ -43,22 +69,16 @@ impl TryFrom<ShapefileConfiguration> for Shapefile {
 	}
 }
 
-pub fn index(shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>) -> impl warp::Reply {
+pub fn index(shapefiles: &std::collections::HashMap<String, Shapefile>) -> impl warp::Reply {
 	warp::reply::json(&shapefiles.keys().collect::<Vec<&String>>())
 }
 
 pub fn show(
-	shapefiles: &Arc<std::collections::HashMap<String, Shapefile>>,
+	shapefiles: &'static std::collections::HashMap<String, Shapefile>,
 	id: &str,
-) -> hyper::Response<hyper::body::Bytes> {
+) -> hyper::Response<hyper::body::Body> {
 	if let Some(shapefile) = shapefiles.get(id) {
-		// This line _does not_ "clone" the entire data.
-		//
-		// `shapefile.data` is a reference-counted thing which is pre-filled at
-		// startup time before this function can be called.  This means we can
-		// pretty easily get ahold of an owned `Bytes` structure surrounding the
-		// thing.
-		let data = shapefile.data.clone();
+		let data: &str = &shapefile.data;
 
 		let response = {
 			http::response::Builder::new()
@@ -66,7 +86,9 @@ pub fn show(
 				.header(hyper::header::CONTENT_TYPE, "application/vnd.geo+json")
 				.header(hyper::header::CACHE_CONTROL, "public")
 				// TODO(rye): Clean up error path
-				.body(data)
+				.body(hyper::body::Body::wrap_stream(ByteChunkStream::new(
+					data, 4096,
+				)))
 				.unwrap()
 		};
 
@@ -89,9 +111,8 @@ mod tests {
 		use super::{Shapefile, ShapefileType};
 		use geojson::{GeoJson, Geometry, Value::Point};
 		use std::collections::HashMap;
-		use std::sync::Arc;
 
-		fn generate_id_and_shapefiles() -> (String, Arc<HashMap<String, Shapefile>>) {
+		fn generate_id_and_shapefiles() -> (String, &'static HashMap<String, Shapefile>) {
 			let contents = GeoJson::Geometry(Geometry::new(Point(vec![0.0_f64, 0.0_f64])));
 			let shapefile = Shapefile {
 				ty: ShapefileType::TabularBlock,
@@ -100,10 +121,12 @@ mod tests {
 			};
 
 			let id = "id".to_string();
-			let map = {
-				let mut hs = HashMap::new();
-				hs.insert(id.clone(), shapefile);
-				Arc::new(hs)
+			let map: &'static HashMap<String, Shapefile> = {
+				use core::mem::MaybeUninit;
+				static mut INNER: MaybeUninit<HashMap<String, Shapefile>> = MaybeUninit::uninit();
+				unsafe { INNER = MaybeUninit::new(HashMap::new()) };
+				unsafe { &mut *INNER.as_mut_ptr() }.insert(id.clone(), shapefile);
+				unsafe { &*INNER.as_ptr() }
 			};
 
 			(id, map)
@@ -136,14 +159,28 @@ mod tests {
 			);
 		}
 
-		#[test]
-		fn found_returns_correct_body() {
+		macro_rules! assert_response_body_eq {
+			($response:ident, $value:literal) => {
+				use hyper::body::Bytes;
+				use tokio::stream::StreamExt;
+				assert_eq!(
+					$response
+						.into_body()
+						.filter_map(|r| r.ok())
+						.fold(Bytes::new(), |acc, new| -> Bytes {
+							[acc, new.clone()].concat().into()
+						})
+						.await,
+					Bytes::from($value)
+				);
+			};
+		}
+
+		#[tokio::test]
+		async fn found_returns_correct_body() {
 			let (id, map) = generate_id_and_shapefiles();
 			let response = super::super::show(&map, &id);
-			assert_eq!(
-				response.body(),
-				"{\"coordinates\":[0.0,0.0],\"type\":\"Point\"}"
-			);
+			assert_response_body_eq!(response, "{\"coordinates\":[0.0,0.0],\"type\":\"Point\"}");
 		}
 
 		#[test]
