@@ -63,6 +63,8 @@ impl ExecutionPlan {
 			SocketAddr::new(host, port)
 		};
 
-		Ok(server(&self.0)?.run(socket).await)
+		server(&self.0)?.run(socket).await;
+
+		Ok(())
 	}
 }

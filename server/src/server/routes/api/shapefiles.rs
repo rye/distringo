@@ -112,7 +112,7 @@ mod tests {
 			let contents = GeoJson::Geometry(Geometry::new(Point(vec![0.0_f64, 0.0_f64])));
 			let shapefile = Shapefile {
 				ty: ShapefileType::TabularBlock,
-				data: contents.to_string().into(),
+				data: contents.to_string(),
 				contents,
 			};
 
