@@ -80,19 +80,15 @@ pub fn show(
 	if let Some(shapefile) = shapefiles.get(id) {
 		let data: &str = &shapefile.data;
 
-		let response = {
-			http::response::Builder::new()
-				.status(hyper::StatusCode::OK)
-				.header(hyper::header::CONTENT_TYPE, "application/vnd.geo+json")
-				.header(hyper::header::CACHE_CONTROL, "public")
-				// TODO(rye): Clean up error path
-				.body(hyper::body::Body::wrap_stream(ByteChunkStream::new(
-					data, 4096,
-				)))
-				.unwrap()
-		};
-
-		response
+		http::response::Builder::new()
+			.status(hyper::StatusCode::OK)
+			.header(hyper::header::CONTENT_TYPE, "application/vnd.geo+json")
+			.header(hyper::header::CACHE_CONTROL, "public")
+			// TODO(rye): Clean up error path
+			.body(hyper::body::Body::wrap_stream(ByteChunkStream::new(
+				data, 4096,
+			)))
+			.unwrap()
 	} else {
 		log::debug!("{:?}", shapefiles);
 
