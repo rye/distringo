@@ -1,6 +1,8 @@
 use core::convert::TryFrom;
-use geojson::GeoJson;
+
 use std::path::Path;
+
+use geojson::GeoJson;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
