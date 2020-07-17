@@ -1611,6 +1611,7 @@ version = "0.1.0"
 dependencies = [
  "config",
  "distringo",
+ "futures",
  "geo",
  "geojson",
  "http",
@@ -1781,6 +1782,7 @@ dependencies = [
  "lazy_static",
  "memchr",
  "mio",
+ "num_cpus",
  "pin-project-lite",
  "slab",
  "tokio-macros",
