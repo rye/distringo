@@ -24,6 +24,6 @@ async fn main() -> distringo::Result<()> {
 	};
 
 	let mut plan: server::ExecutionPlan = settings.into();
-	plan.check()?;
+	plan.prepare()?;
 	plan.execute().await
 }

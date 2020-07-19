@@ -34,7 +34,7 @@ impl From<config::Config> for ExecutionPlan {
 }
 
 impl ExecutionPlan {
-	pub fn check(&self) -> Result<()> {
+	pub fn prepare(&self) -> Result<()> {
 		// TODO(rye): Instead of doing nothing, perform a dry run of creating the
 		// routes here so as to early-die if something is amiss.
 		//
