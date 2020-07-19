@@ -1618,6 +1618,7 @@ dependencies = [
  "hyper",
  "lazy_static",
  "log 0.4.8",
+ "once_cell",
  "pretty_env_logger",
  "serde",
  "tokio",
