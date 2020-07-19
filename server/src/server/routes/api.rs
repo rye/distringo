@@ -83,5 +83,5 @@ pub fn api(
 
 	let gets = shapefiles;
 
-	Ok(warp::any().and(api.or(api_v0)).unify().and(gets).boxed())
+	Ok(warp::any().and(api.or(api_v0).unify()).and(gets).boxed())
 }
