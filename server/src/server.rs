@@ -2,12 +2,6 @@ pub use distringo::Result;
 
 pub mod routes;
 
-pub fn server(
-	settings: &config::Config,
-) -> Result<warp::Server<impl warp::Filter<Extract = impl warp::Reply> + Clone>> {
-	Ok(warp::serve(routes::routes(settings)?))
-}
-
 async fn handle_rejection(
 	err: warp::Rejection,
 ) -> core::result::Result<impl warp::Reply, core::convert::Infallible> {
@@ -63,7 +57,7 @@ impl ExecutionPlan {
 			SocketAddr::new(host, port)
 		};
 
-		server(&self.0)?.run(socket).await;
+		warp::serve(routes::routes(&self.0)?).run(socket).await;
 
 		Ok(())
 	}
