@@ -107,7 +107,10 @@ mod tests {
 	mod show {
 		use super::{Shapefile, ShapefileType};
 		use geojson::{GeoJson, Geometry, Value::Point};
+		use once_cell::sync::OnceCell;
 		use std::collections::HashMap;
+
+		static CACHE: OnceCell<HashMap<String, Shapefile>> = OnceCell::new();
 
 		fn generate_id_and_shapefiles() -> (String, &'static HashMap<String, Shapefile>) {
 			let contents = GeoJson::Geometry(Geometry::new(Point(vec![0.0_f64, 0.0_f64])));
@@ -119,13 +122,17 @@ mod tests {
 
 			let id = "id".to_string();
 			let map: &'static HashMap<String, Shapefile> = {
-				use core::mem::MaybeUninit;
-				static mut INNER: MaybeUninit<HashMap<String, Shapefile>> = MaybeUninit::uninit();
-				std::sync::Once::new().call_once(|| {
-					unsafe { INNER = MaybeUninit::new(HashMap::new()) };
-					unsafe { &mut *INNER.as_mut_ptr() }.insert(id.clone(), shapefile);
-				});
-				unsafe { &*INNER.as_ptr() }
+				use std::sync::Mutex;
+
+				if let None = CACHE.get() {
+					let mut map = HashMap::new();
+					map.insert(id.clone(), shapefile);
+					CACHE
+						.set(map)
+						.unwrap_or_else(|_| eprintln!("cache already initialized"));
+				}
+
+				CACHE.get().unwrap()
 			};
 
 			(id, map)
