@@ -3,6 +3,7 @@ use core::convert::TryFrom;
 use std::path::Path;
 
 use geojson::GeoJson;
+use hyper::body::Body;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -77,7 +78,7 @@ pub fn index(shapefiles: &std::collections::HashMap<String, Shapefile>) -> impl 
 pub fn show(
 	shapefiles: &'static std::collections::HashMap<String, Shapefile>,
 	id: &str,
-) -> hyper::Response<hyper::body::Body> {
+) -> hyper::Response<Body> {
 	if let Some(shapefile) = shapefiles.get(id) {
 		let data: &str = &shapefile.data;
 
@@ -86,9 +87,7 @@ pub fn show(
 			.header(hyper::header::CONTENT_TYPE, "application/vnd.geo+json")
 			.header(hyper::header::CACHE_CONTROL, "public")
 			// TODO(rye): Clean up error path
-			.body(hyper::body::Body::wrap_stream(ByteChunkStream::new(
-				data, 4096,
-			)))
+			.body(Body::wrap_stream(ByteChunkStream::new(data, 4096)))
 			.unwrap()
 	} else {
 		log::debug!("{:?}", shapefiles);
