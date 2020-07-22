@@ -124,7 +124,7 @@ mod tests {
 			let map: &'static HashMap<String, Shapefile> = {
 				use std::sync::Mutex;
 
-				if let None = CACHE.get() {
+				if CACHE.get().is_none() {
 					let mut map = HashMap::new();
 					map.insert(id.clone(), shapefile);
 					CACHE
