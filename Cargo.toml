@@ -18,7 +18,7 @@ serde = { version = "~1.0.114", features = ["derive"] }
 
 [dev-dependencies]
 criterion = "~0.3.3"
-simple_logger = "~1.10.0"
+simple_logger = "~1.11.0"
 serde_yaml = "~0.8.13"
 
 [[bench]]
