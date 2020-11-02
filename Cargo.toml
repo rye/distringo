@@ -13,7 +13,7 @@ geo = "~0.15.0"
 geojson = "~0.20.1"
 log = "~0.4.11"
 lazy_static = "~1.4.0"
-regex = "~1.4.1"
+regex = "~1.4.2"
 serde = { version = "~1.0.117", features = ["derive"] }
 
 [dev-dependencies]
