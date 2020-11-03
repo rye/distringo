@@ -12,7 +12,7 @@ futures = { version = "~0.3" }
 geo = "~0.15.0"
 geojson = "~0.20.1"
 http = "~0.2.1"
-hyper = "~0.13.7"
+hyper = "~0.13.9"
 log = "~0.4.11"
 once_cell = "~1.4.0"
 pretty_env_logger = "~0.4.0"
