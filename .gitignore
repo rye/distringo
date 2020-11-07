@@ -8,6 +8,9 @@
 /data/*
 !/data/.keep
 
+# Ignore cargo configuration
+/.cargo/
+
 # Data that we've generated and acquired from places
 *.geojson
 *.pl
