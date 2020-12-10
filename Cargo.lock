@@ -681,9 +681,9 @@ dependencies = [
 
 [[package]]
 name = "geojson"
-version = "0.20.1"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df48768ce77d725b32f692a4653d4529a24e2882c8740bcaa03a0f788c853af6"
+checksum = "f60273a5af6ab2d7d3c80de7d97b68bb61ebd11c9996573593d8e7eabe0f46be"
 dependencies = [
  "num-traits",
  "serde",
