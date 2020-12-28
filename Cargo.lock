@@ -1652,7 +1652,7 @@ dependencies = [
  "once_cell",
  "pretty_env_logger",
  "serde",
- "tokio 0.3.5",
+ "tokio 0.3.6",
  "warp",
 ]
 
@@ -1857,9 +1857,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a12a3eb39ee2c231be64487f1fcbe726c8f2514876a55480a5ab8559fc374252"
+checksum = "720ba21c25078711bf456d607987d95bce90f7c3bea5abe1db587862e7a1e87c"
 dependencies = [
  "autocfg 1.0.1",
  "futures-core",
