@@ -19,5 +19,5 @@ pretty_env_logger = "0.4.0"
 tokio = { version = "0.3.6", features = ["macros", "rt-multi-thread", "stream"] }
 warp = { version = "0.2.4", features = ["compression"] }
 lazy_static = "1.4.0"
-serde = { version = "1.0.118", features = ["derive"] }
+serde = { version = "1.0.119", features = ["derive"] }
 distringo = { path = ".." }
