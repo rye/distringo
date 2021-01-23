@@ -1541,6 +1541,7 @@ dependencies = [
  "pretty_env_logger",
  "serde",
  "tokio",
+ "tokio-stream",
  "warp",
 ]
 

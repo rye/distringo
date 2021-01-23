@@ -121,8 +121,6 @@ mod tests {
 
 			let id = "id".to_string();
 			let map: &'static HashMap<String, Shapefile> = {
-				use std::sync::Mutex;
-
 				if CACHE.get().is_none() {
 					let mut map = HashMap::new();
 					map.insert(id.clone(), shapefile);
@@ -167,7 +165,7 @@ mod tests {
 		macro_rules! assert_response_body_eq {
 			($response:ident, $value:literal) => {
 				use hyper::body::Bytes;
-				use tokio::stream::StreamExt;
+				use tokio_stream::StreamExt;
 				assert_eq!(
 					$response
 						.into_body()
