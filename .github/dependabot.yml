@@ -12,3 +12,15 @@ updates:
   allow:
   - dependency-type: direct
   - dependency-type: indirect
+
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+    time: '12:00'
+  commit-message: { prefix: "" }
+  reviewers: [ rye ]
+  assignees: [ rye ]
+  allow:
+  - dependency-type: direct
+  - dependency-type: indirect
