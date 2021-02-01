@@ -17,7 +17,7 @@ regex = "1.4.2"
 serde = { version = "1.0.118", features = ["derive"] }
 
 [dev-dependencies]
-criterion = "0.3.3"
+criterion = "0.3.4"
 simple_logger = "1.11.0"
 serde_yaml = "0.8.14"
 
