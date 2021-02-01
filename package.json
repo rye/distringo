@@ -1,0 +1,31 @@
+{
+  "name": "distringo",
+  "version": "0.0.0",
+  "description": "Distringo is (going to be) a redistricting application.",
+  "main": "webpack.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rye/distringo.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rye/distringo/issues"
+  },
+  "homepage": "https://github.com/rye/distringo#readme",
+  "dependencies": {
+    "idb": "^6.0.0"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^7.0.0",
+    "html-webpack-plugin": "^4.5.1",
+    "sass": "^1.32.5",
+    "sass-loader": "^10.1.1",
+    "webpack": "^5.19.0",
+    "webpack-cli": "^4.4.0"
+  }
+}

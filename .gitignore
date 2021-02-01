@@ -23,3 +23,10 @@
 
 # Indexes
 *.idx
+
+# Compiled public code
+/dist/
+!/dist/.keep
+
+# Downloaded and installed node modules
+/node_modules/
