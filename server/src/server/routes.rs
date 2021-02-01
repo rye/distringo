@@ -5,11 +5,11 @@ pub mod api;
 pub fn routes(cfg: &config::Config) -> distringo::Result<BoxedFilter<(impl Reply,)>> {
 	let slash = warp::get()
 		.and(path::end())
-		.and(fs::file("./public/index.html"));
+		.and(fs::file("./dist/index.html"));
 
-	let public_files = warp::get().and(fs::dir("./public/")).and(path::end());
+	let static_files = warp::get().and(fs::dir("./dist/")).and(path::end());
 
-	let file_routes = slash.or(public_files);
+	let file_routes = slash.or(static_files);
 
 	let api_routes = api::api(cfg)?;
 
