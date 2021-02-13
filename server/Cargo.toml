@@ -10,7 +10,7 @@ edition = "2018"
 config = { version = "0.10.1", default_features = false, features = ["json", "yaml"] }
 futures = { version = "0.3" }
 geo = "0.17.0"
-geojson = "0.21.0"
+geojson = "0.22.0"
 http = "0.2.3"
 hyper = "0.14.2"
 log = "0.4.14"
