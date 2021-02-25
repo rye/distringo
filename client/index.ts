@@ -18,10 +18,6 @@ let map = L.map(container, {
 	doubleClickZoom: false,
 });
 
-if (true) {
-	indexedDB.deleteDatabase("distringo");
-}
-
 export type ShapefileSpec = {
 	id: string,
 	minZoom?: number,
@@ -48,24 +44,30 @@ let shapefiles: Array<ShapefileSpec> = [
 ];
 
 // Pre-seed the database if it is not already set up.
-shapefiles.forEach((shapefileSpec) => {
-	DB("distringo", 1).then(async (db) => {
-		console.debug(`loading shapefile ${shapefileSpec.id}`)
+DB("distringo", 1).then((db) => {
+	shapefiles.forEach((shapefileSpec) => {
 
 		const id = shapefileSpec.id
-		const tx = db.transaction(['shapefiles'], 'readwrite')
 
-		API.shapefile(id)
-			.then(data => data.text())
-			.then(data => db.put('shapefiles', { id: id, data: data }))
-			.then(() => console.debug(`stored shapefile ${id}`))
-			.then(() => db.get('shapefiles', id).then(shapefile => {
-				console.debug(`drawing shapefile ${shapefile.id}`)
-				const data = JSON.parse(shapefile.data)
-				L.geoJSON(data, {}).addTo(map)
-				console.debug(`finished drawing shapefile ${shapefile.id}`)
-			}))
-			.then(() => tx.done)
+		const tx = db.transaction('shapefiles', 'readwrite')
+
+		tx.store.getKey(id).then(maybeKey => {
+			if (maybeKey !== undefined) {
+				console.debug(`skipping already-loaded shapefile ${id}`)
+			} else {
+				console.log(`loading shapefile ${shapefileSpec.id}`)
+				API.shapefile(id)
+					.then(data => data.text())
+					.then(data => tx.store.add({ id: id, data: data }))
+					.then(() => console.debug(`stored shapefile ${id}`))
+					.then(() => tx.store.get(id).then(shapefile => {
+						console.debug(`drawing shapefile ${shapefile.id}`)
+						const data = JSON.parse(shapefile.data)
+						L.geoJSON(data, {}).addTo(map)
+						console.debug(`finished drawing shapefile ${shapefile.id}`)
+					}))
+			}
+		}).then(() => tx.done)
 	})
 })
 
