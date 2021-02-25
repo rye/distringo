@@ -1,8 +1,11 @@
-import {API, API_ROUTE} from './api'
+import { API, API_ROUTE } from './api'
 
 let container = document.getElementById('map');
 
-import {DB} from './db'
+import { DB } from './db'
+
+import * as L from 'leaflet'
+
 
 console.info("Initializing the map");
 
@@ -17,7 +20,14 @@ let map = L.map(container, {
 
 DB("distringo", 1).then(db => console.debug(db));
 
-let shapefiles = [
+type Shapefile = {
+	id: string,
+	data: { id: string },
+	minZoom?: number,
+	maxZoom?: number,
+}
+
+let shapefiles: Array<Shapefile> = [
 	{
 		id: "tl_2010_18157_tabblock",
 		data: { id: "tl_2010_18157_tabblock" },
@@ -28,7 +38,7 @@ let shapefiles = [
 
 for (let shapefile of shapefiles) {
 	if (shapefile.data && typeof shapefile.data.id === "string") {
-		console.debug(`Processing shapefile ${shapefile}`)
+		console.debug(`Processing shapefile ${shapefile.data.id}`)
 
 		let id = shapefile.data.id
 
