@@ -18,37 +18,56 @@ let map = L.map(container, {
 	doubleClickZoom: false,
 });
 
-DB("distringo", 1).then(db => console.debug(db));
+if (true) {
+	indexedDB.deleteDatabase("distringo");
+}
 
-type Shapefile = {
+export type ShapefileSpec = {
 	id: string,
-	data: { id: string },
 	minZoom?: number,
 	maxZoom?: number,
 }
 
-let shapefiles: Array<Shapefile> = [
+
+export type Shapefile = {
+	id: string,
+	data: string,
+}
+
+let shapefiles: Array<ShapefileSpec> = [
 	{
 		id: "tl_2010_18157_tabblock",
-		data: { id: "tl_2010_18157_tabblock" },
+		minZoom: 10.0,
+		maxZoom: undefined,
+	},
+	{
+		id: "tl_2010_18157_tabblock",
 		minZoom: 10.0,
 		maxZoom: undefined,
 	},
 ];
 
-for (let shapefile of shapefiles) {
-	if (shapefile.data && typeof shapefile.data.id === "string") {
-		console.debug(`Processing shapefile ${shapefile.data.id}`)
+// Pre-seed the database if it is not already set up.
+shapefiles.forEach((shapefileSpec) => {
+	DB("distringo", 1).then(async (db) => {
+		console.debug(`loading shapefile ${shapefileSpec.id}`)
 
-		let id = shapefile.data.id
+		const id = shapefileSpec.id
+		const tx = db.transaction(['shapefiles'], 'readwrite')
 
 		API.shapefile(id)
-			.then(data => data.json())
-			.then(object => {
-				L.geoJSON(object, {}).addTo(map)
-			})
-	}
-}
+			.then(data => data.text())
+			.then(data => db.put('shapefiles', { id: id, data: data }))
+			.then(() => console.debug(`stored shapefile ${id}`))
+			.then(() => db.get('shapefiles', id).then(shapefile => {
+				console.debug(`drawing shapefile ${shapefile.id}`)
+				const data = JSON.parse(shapefile.data)
+				L.geoJSON(data, {}).addTo(map)
+				console.debug(`finished drawing shapefile ${shapefile.id}`)
+			}))
+			.then(() => tx.done)
+	})
+})
 
 console.info("Adding OSM tile set");
 
