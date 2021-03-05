@@ -1,0 +1,14 @@
+[package]
+name = "palapelify"
+publish = false
+version = "0.1.0"
+authors = ["Kristofer Rye <kristofer.rye@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33.3"
+geo = "0.17.0"
+geojson = { version = "0.22.0", features = ["geo-types"] }
+geo-types = "0.7.0"
+itertools = "0.10.0"
+num-traits = "0.2.14"
