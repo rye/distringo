@@ -83,10 +83,15 @@ fn main() {
 				let ls_a: &geo::LineString<f64> = pair[0].1;
 				let ls_b: &geo::LineString<f64> = pair[1].1;
 
-				let (ls_a_bb, ls_b_bb): (geo::Rect<f64>, geo::Rect<f64>) =
-					(ls_a.bounding_rect().unwrap(), ls_b.bounding_rect().unwrap());
-
-				ls_a_bb.intersects(&ls_b_bb) && ls_a.intersects(ls_b)
+				match (ls_a.bounding_rect(), ls_b.bounding_rect()) {
+					// In nearly all cases, we should have bounding boxes, so check that they
+					// overlap before doing the (more intense) operation of checking each segment
+					// in a LineString for intersection.
+					(Some(a_bb), Some(b_bb)) => a_bb.intersects(&b_bb) && ls_a.intersects(ls_b),
+					// Fall back on simple LineString intersection checking if we couldn't figure
+					// out bounding boxes (e.g. because of an empty LineString? this should be rare.)
+					_ => ls_a.intersects(ls_b),
+				}
 			};
 
 			ctr += 1.0;
