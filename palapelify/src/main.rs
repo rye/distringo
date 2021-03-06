@@ -4,14 +4,6 @@ use std::io::Read;
 use geo_types::CoordNum;
 use itertools::Itertools;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum OverlapType {
-	None,
-	SinglePoint,
-	Segment,
-	Full,
-}
-
 fn main() {
 	let input_file: String = std::env::args().nth(1).expect("missing input file name");
 	let output_file: String = std::env::args().nth(2).expect("missing output file name");
@@ -88,33 +80,26 @@ fn main() {
 		(feature_count * (feature_count - 1)) as f64 / 2.0
 	);
 
-	let pair_overlap_types: HashMap<(&str, &str), OverlapType> = features
+	let pair_results: HashMap<(&str, &str), bool> = features
 		.iter()
 		.combinations(2)
 		.map(|pair| {
-			let first_ls = pair[0].1;
-			let last_ls = pair[1].1;
-
 			let name_a: &str = *pair[0].0;
 			let name_b: &str = *pair[1].0;
 
-			let overlap_type: OverlapType = {
-				use geo::algorithm::intersects::Intersects;
+			let overlaps: bool = {
+				use geo::intersects::Intersects;
 
-				if first_ls.intersects(last_ls) {
-					OverlapType::Segment
-				} else {
-					OverlapType::None
-				}
+				pair[0].1.intersects(pair[1].1)
 			};
 
-			((name_a, name_b), overlap_type)
+			((name_a, name_b), overlaps)
 		})
 		.collect();
 
-	for ((feature_a, feature_b), t) in pair_overlap_types {
-		if t != OverlapType::None {
-			println!("Features {} and {} overlap.", feature_a, feature_b);
+	for ((name_a, name_b), overlaps) in pair_results {
+		if overlaps {
+			println!("Features {} and {} overlap.", name_a, name_b);
 		}
 	}
 }
