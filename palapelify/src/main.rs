@@ -1,7 +1,6 @@
 use std::collections::*;
 use std::io::Read;
 
-use geo_types::CoordNum;
 use itertools::Itertools;
 
 fn feature_to_exterior(feature: &geojson::Feature) -> (&str, geo::LineString<f64>) {
@@ -58,27 +57,20 @@ fn main() {
 
 	let features: &Vec<geojson::Feature> = &data.features;
 
-	let features: HashMap<&str, geo::LineString<f64>> =
-		features.iter().map(feature_to_exterior).collect();
-
-	let feature_count = features.len();
-	let pairs = (feature_count * (feature_count - 1)) as f64 / 2.0;
-
-	println!("Processing {} features ({} pairs)", feature_count, pairs);
-
 	let pair_results: HashMap<(&str, &str), bool> = features
 		.iter()
+		.map(feature_to_exterior)
 		.combinations(2)
 		.map(|pair| {
-			let name_a: &str = *pair[0].0;
-			let name_b: &str = *pair[1].0;
+			let name_a: &str = pair[0].0;
+			let name_b: &str = pair[1].0;
 
 			let overlaps: bool = {
 				use geo::bounding_rect::BoundingRect;
 				use geo::intersects::Intersects;
 
-				let ls_a: &geo::LineString<f64> = pair[0].1;
-				let ls_b: &geo::LineString<f64> = pair[1].1;
+				let ls_a: &geo::LineString<f64> = &pair[0].1;
+				let ls_b: &geo::LineString<f64> = &pair[1].1;
 
 				match (ls_a.bounding_rect(), ls_b.bounding_rect()) {
 					// In nearly all cases, we should have bounding boxes, so check that they
