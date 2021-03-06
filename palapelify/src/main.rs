@@ -73,12 +73,12 @@ fn main() {
 		.collect();
 
 	let feature_count = features.len();
+	let pairs = (feature_count * (feature_count - 1)) as f64 / 2.0;
 
-	println!(
-		"Processing {} features ({} pairs)",
-		feature_count,
-		(feature_count * (feature_count - 1)) as f64 / 2.0
-	);
+	println!("Processing {} features ({} pairs)", feature_count, pairs);
+
+	let mut ctr: f64 = 0.0;
+	let t0 = std::time::Instant::now();
 
 	let pair_results: HashMap<(&str, &str), bool> = features
 		.iter()
@@ -92,6 +92,30 @@ fn main() {
 
 				pair[0].1.intersects(pair[1].1)
 			};
+
+			ctr += 1.0;
+
+			let t = std::time::Instant::now();
+
+			if ctr % 1000.0 == 0.0 {
+				// prop done = (# done) / total
+				let pct = ctr / pairs;
+
+				// elapsed = t - t0
+				let elapsed_s = t.duration_since(t0).as_secs_f64();
+
+				// est_total = elapsed / (prop done)
+				// remaining = est_total - elapsed_s
+				let remaining_s = (elapsed_s) / (pct) - elapsed_s;
+
+				println!(
+					"Processed {} pairs of {} ({:.2}%; ETA: {:.0}s)",
+					ctr,
+					pairs,
+					pct * 100.0,
+					remaining_s
+				);
+			}
 
 			((name_a, name_b), overlaps)
 		})
