@@ -4,6 +4,36 @@ use std::io::Read;
 use geo_types::CoordNum;
 use itertools::Itertools;
 
+fn feature_to_exterior(feature: &geojson::Feature) -> (&str, geo::LineString<f64>) {
+	let feature_name: &str = feature.property("GEOID10").unwrap().as_str().unwrap();
+	let geometry: &geojson::Geometry = (feature.geometry)
+		.as_ref()
+		.expect("geometry-less feature?!");
+
+	use core::convert::TryInto;
+
+	let geo_geometry: geo::Geometry<f64> = (geometry.value.clone())
+		.try_into()
+		.expect("failed to convert geometry");
+
+	// TODO Replace clone() with iter constructing f64s directly from the reference.
+	let ls: geo::LineString<f64> = match geo_geometry {
+		geo::Geometry::Polygon(p) => p.exterior().clone(),
+		geo::Geometry::MultiPolygon(ps) => geo::LineString(
+			ps.iter()
+				.map(|p| p.exterior().points_iter().map(Into::into))
+				.flatten()
+				.collect::<Vec<_>>(),
+		),
+		_ => panic!(
+			"while processing {}: Geometry variant {:?} not yet supported",
+			feature_name, geo_geometry
+		),
+	};
+
+	(feature_name, ls)
+}
+
 fn main() {
 	let input_file: String = std::env::args().nth(1).expect("missing input file name");
 	let output_file: String = std::env::args().nth(2).expect("missing output file name");
@@ -28,38 +58,8 @@ fn main() {
 
 	let features: &Vec<geojson::Feature> = &data.features;
 
-	let features: HashMap<&str, geo::LineString<f64>> = features
-		.iter()
-		.map(|feature| -> (&str, geo::LineString<f64>) {
-			let feature_name: &str = feature.property("GEOID10").unwrap().as_str().unwrap();
-			let geometry: &geojson::Geometry = (feature.geometry)
-				.as_ref()
-				.expect("geometry-less feature?!");
-
-			use core::convert::TryInto;
-
-			let geo_geometry: geo::Geometry<f64> = (geometry.value.clone())
-				.try_into()
-				.expect("failed to convert geometry");
-
-			// TODO Replace clone() with iter constructing f64s directly from the reference.
-			let ls: geo::LineString<f64> = match geo_geometry {
-				geo::Geometry::Polygon(p) => p.exterior().clone(),
-				geo::Geometry::MultiPolygon(ps) => geo::LineString(
-					ps.iter()
-						.map(|p| p.exterior().points_iter().map(Into::into))
-						.flatten()
-						.collect::<Vec<_>>(),
-				),
-				_ => panic!(
-					"while processing {}: Geometry variant {:?} not yet supported",
-					feature_name, geo_geometry
-				),
-			};
-
-			(feature_name, ls)
-		})
-		.collect();
+	let features: HashMap<&str, geo::LineString<f64>> =
+		features.iter().map(feature_to_exterior).collect();
 
 	let feature_count = features.len();
 	let pairs = (feature_count * (feature_count - 1)) as f64 / 2.0;
