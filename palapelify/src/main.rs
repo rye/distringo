@@ -28,7 +28,7 @@ fn main() {
 
 	let features: &Vec<geojson::Feature> = &data.features;
 
-	let features: HashMap<&str, &geojson::Feature> = features
+	let features: HashMap<&str, geo::LineString<f64>> = features
 		.iter()
 		.map(|feature| {
 			(
@@ -36,19 +36,11 @@ fn main() {
 				feature,
 			)
 		})
-		.collect();
-
-	let features: HashMap<&str, &geojson::Geometry> = features
-		.into_iter()
 		.map(
 			|(k, v): (&str, &geojson::Feature)| -> (&str, &geojson::Geometry) {
 				(k, (v.geometry).as_ref().expect("geometry-less feature?!"))
 			},
 		)
-		.collect();
-
-	let features: HashMap<&str, geo::LineString<f64>> = features
-		.into_iter()
 		.map(
 			|(k, v): (&str, &geojson::Geometry)| -> (&str, geo::LineString<f64>) {
 				let geometry: &geojson::Geometry = v;
