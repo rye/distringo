@@ -30,44 +30,35 @@ fn main() {
 
 	let features: HashMap<&str, geo::LineString<f64>> = features
 		.iter()
-		.map(|feature| {
-			(
-				feature.property("GEOID10").unwrap().as_str().unwrap(),
-				feature,
-			)
+		.map(|feature| -> (&str, geo::LineString<f64>) {
+			let feature_name: &str = feature.property("GEOID10").unwrap().as_str().unwrap();
+			let geometry: &geojson::Geometry = (feature.geometry)
+				.as_ref()
+				.expect("geometry-less feature?!");
+
+			use core::convert::TryInto;
+
+			let geo_geometry: geo::Geometry<f64> = (geometry.value.clone())
+				.try_into()
+				.expect("failed to convert geometry");
+
+			// TODO Replace clone() with iter constructing f64s directly from the reference.
+			let ls: geo::LineString<f64> = match geo_geometry {
+				geo::Geometry::Polygon(p) => p.exterior().clone(),
+				geo::Geometry::MultiPolygon(ps) => geo::LineString(
+					ps.iter()
+						.map(|p| p.exterior().points_iter().map(Into::into))
+						.flatten()
+						.collect::<Vec<_>>(),
+				),
+				_ => panic!(
+					"while processing {}: Geometry variant {:?} not yet supported",
+					feature_name, geo_geometry
+				),
+			};
+
+			(feature_name, ls)
 		})
-		.map(
-			|(k, v): (&str, &geojson::Feature)| -> (&str, &geojson::Geometry) {
-				(k, (v.geometry).as_ref().expect("geometry-less feature?!"))
-			},
-		)
-		.map(
-			|(k, v): (&str, &geojson::Geometry)| -> (&str, geo::LineString<f64>) {
-				let geometry: &geojson::Geometry = v;
-				use core::convert::TryInto;
-
-				let geo_geometry: geo::Geometry<f64> = (geometry.value.clone())
-					.try_into()
-					.expect("failed to convert geometry");
-
-				// TODO Replace clone() with iter constructing f64s directly from the reference.
-				let ls: geo::LineString<f64> = match geo_geometry {
-					geo::Geometry::Polygon(p) => p.exterior().clone(),
-					geo::Geometry::MultiPolygon(ps) => geo::LineString(
-						ps.iter()
-							.map(|p| p.exterior().points_iter().map(Into::into))
-							.flatten()
-							.collect::<Vec<_>>(),
-					),
-					_ => panic!(
-						"while processing {}: Geometry variant {:?} not yet supported",
-						k, geo_geometry
-					),
-				};
-
-				(k, ls)
-			},
-		)
 		.collect();
 
 	let feature_count = features.len();
