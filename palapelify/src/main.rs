@@ -3,7 +3,9 @@ use std::io::Read;
 
 use itertools::Itertools;
 
-fn feature_to_geometry(feature: &geojson::Feature) -> (&str, geo::Geometry<f64>) {
+type FeatureGeometry<'x> = (&'x str, geo::Geometry<f64>);
+
+fn feature_to_geometry(feature: &geojson::Feature) -> FeatureGeometry {
 	use core::convert::TryInto;
 
 	let feature_name: &str = feature.property("GEOID10").unwrap().as_str().unwrap();
@@ -20,7 +22,7 @@ fn feature_to_geometry(feature: &geojson::Feature) -> (&str, geo::Geometry<f64>)
 }
 
 fn geometry_pair_to_adjacency_fragments<'x>(
-	pair: ((&'x str, geo::Geometry<f64>), (&'x str, geo::Geometry<f64>)),
+	pair: (FeatureGeometry<'x>, FeatureGeometry<'x>),
 ) -> Option<Vec<(&'x str, &'x str)>> {
 	let name_a: &str = pair.0 .0;
 	let name_b: &str = pair.1 .0;
@@ -65,7 +67,7 @@ fn geojson_to_adjacency_map(geojson: &geojson::GeoJson) -> HashMap<&str, Vec<&st
 		.filter_map(geometry_pair_to_adjacency_fragments)
 		.flatten()
 		.fold(HashMap::new(), |mut map, (name, neighbor)| {
-			map.entry(name).or_insert(vec![]).push(neighbor);
+			map.entry(name).or_insert_with(Vec::new).push(neighbor);
 			map
 		});
 
