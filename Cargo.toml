@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 config = { version = "0.10.1", default_features = false, features = ["json", "yaml"] }
-csv = "1.1.5"
+csv = "1.1.6"
 fnv = "1.0.7"
 geo = "0.17.1"
 geojson = "0.22.0"
