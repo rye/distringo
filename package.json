@@ -21,7 +21,7 @@
     "idb": "^6.0.0"
   },
   "devDependencies": {
-    "copy-webpack-plugin": "^7.0.0",
+    "copy-webpack-plugin": "^8.0.0",
     "html-webpack-plugin": "^5.1.0",
     "sass": "^1.32.8",
     "sass-loader": "^11.0.1",
