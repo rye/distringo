@@ -18,6 +18,7 @@ macro_rules! generate_field_getter {
 		impl $container_type {
 			#[must_use]
 			$vis fn $getter_name(&self) -> $pty {
+				debug_assert!(self.$container_data_field[$name].len() <= $width);
 				self.$container_data_field[$name].parse::<$pty>().unwrap()
 			}
 		}
@@ -41,6 +42,7 @@ macro_rules! generate_field_getter {
 		impl $container_type {
 			#[must_use]
 			$vis fn $getter_name(&self) -> &str {
+				debug_assert!(self.$container_data_field[$name].len() <= $width);
 				&self.$container_data_field[$name]
 			}
 		}
@@ -62,6 +64,7 @@ macro_rules! generate_field_getter {
 		impl $container_type {
 			#[must_use]
 			$vis fn $getter_name(&self) -> &str {
+				debug_assert!(self.$container_data_field[$name].len() <= $width);
 				&self.$container_data_field[$name].trim()
 			}
 		}
