@@ -197,18 +197,18 @@ generate_fields!(
 	PUMA { @ + 83 w 5 - [ pub, puma e.g. "" ] },
 
 	// Area Characteristics
-	AREALAND {},
-	AREAWATR {},
-	BASENAME {},
-	NAME {},
-	FUNCSTAT {},
-	GCUNI {},
-	POP100 {},
-	HU100 {},
-	INTPTLAT {},
-	INTPTLON {},
-	LSADC {},
-	PARTFLAG {},
+	AREALAND { @ + 84 w 14 - [ pub, arealand e.g. "1625" ] },
+	AREAWATR { @ + 85 w 14 - [ pub, areawatr e.g. "0" ] },
+	BASENAME { @ + 86 w 100 - [ pub, basename e.g. "3030" ] },
+	NAME { @ + 87 w 125 - [ pub, name e.g. "Block 3030" ] },
+	FUNCSTAT { @ + 88 w 1 - [ pub, funcstat e.g. "S" ] },
+	GCUNI { @ + 89 w 1 - [ pub, gcuni e.g. "" ] },
+	POP100 { @ + 90 w 9 - [ pub, pop100 e.g. "0" ] },
+	HU100 { @ + 91 w 9 - [ pub, hu100 e.g. "0" ] },
+	INTPTLAT { @ + 92 w 11 - [ pub, intptlat e.g. "+41.9866626" ] },
+	INTPTLON { @ + 93 w 12 - [ pub, intptlon e.g. "-071.4802535" ] },
+	LSADC { @ + 94 w 2 - [ pub, lsadc e.g. "BK" ] },
+	PARTFLAG { @ + 95 w 1 - [ pub, partflag e.g. "" ] },
 
 	// Special Area Codes
 	UGA {}
