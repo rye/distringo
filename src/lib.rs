@@ -52,6 +52,7 @@ pub trait GeographicalHeader {
 }
 
 pub mod census2010;
+pub mod census2020;
 
 mod schema;
 pub use schema::*;
