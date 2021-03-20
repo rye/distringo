@@ -211,7 +211,7 @@ generate_fields!(
 	PARTFLAG { @ + 95 w 1 - [ pub, partflag e.g. "" ] },
 
 	// Special Area Codes
-	UGA {}
+	UGA { @ + 96 w 5 - [ pub, uga e.g. "99999" ] }
 );
 
 pub struct GeographicalHeader {
