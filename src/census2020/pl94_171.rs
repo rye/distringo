@@ -101,7 +101,7 @@ macro_rules! generate_fields {
 }
 
 #[allow(dead_code)]
-const RI_GEO2018_2020_STYLE_EXAMPLE: &str = "PLST|RI|040|00|00|000|00|0000001|0400000US44|44|1|1|44|01219835|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||1060563703|67858968|Rhode Island|Rhode Island|A||614053|271266|+41.8697678|-071.5786246|00||";
+const RI_GEO2018_2020_STYLE_EXAMPLE: &str = "PLST|RI|750|00|00|000|00|0019326|7500000US440070185003030|440070185003030|1|1|44|01219835|007|H4|01219781|80780|C5|01220079|||||||99999|99|99999999|80780|C5|01220079|018500|3|3030|9999|9|99999|99|99999999|999|99999|99|99999999|999999|9|99999|99|99999999|39300|1|148|99999|77200|1|715|99999|N|N||||01|||||020|||||051|||||443909|A||99999|99999|01200||1625|0|3030|Block 3030|S||0|0|+41.9866626|-071.4802535|BK||99999";
 
 generate_fields!(
 	GeographicalHeader, data,
@@ -109,13 +109,13 @@ generate_fields!(
 	// Record codes
 	FILEID { @ + 0 w 6 - [pub, fileid e.g. "PLST"] },
 	STUSAB { @ + 1 w 2 - [pub, stusab e.g. "RI"] },
-	SUMLEV { @ + 2 w 3 - [pub, sumlev e.g. "040"] },
+	SUMLEV { @ + 2 w 3 - [pub, sumlev e.g. "750"] },
 	// TODO(rye) 2020 +field: GEOVAR.
 	GEOVAR { @ + 3 w 2 - [pub, geovar e.g. "00"] },
 	GEOCOMP { @ + 4 w 2 - [pub, geocomp e.g. "00"] },
 	CHARITER { @ + 5 w 3 - [pub, chariter e.g. "000"] },
 	CIFSN { @ + 6 w 2 - [pub, cifsn e.g. "00"] },
-	LOGRECNO { @ + 7 w 7 - [pub, logrecno #> crate::LogicalRecordNumber | e.g. 1_u64] },
+	LOGRECNO { @ + 7 w 7 - [pub, logrecno #> crate::LogicalRecordNumber | e.g. 19326_u64] },
 
 	// Geographic Area Codes
 	GEOID {},
