@@ -27,6 +27,7 @@ lazy_static::lazy_static! {
 }
 
 use crate::census2010;
+use crate::census2020;
 use crate::Result;
 use crate::Schema;
 use crate::Table;
@@ -287,6 +288,26 @@ fn extract_table_locations(schema: Schema, s: &str) -> FnvHashMap<Table, TableLo
 					Table::Census2010(census2010::Table::Pl94_171(census2010::pl94_171::H1))
 				}
 				(Schema::Census2010(census2010::Schema::Pl94_171), _) => unimplemented!(),
+
+				(Schema::Census2020(census2020::Schema::Pl94_171), "p1") => {
+					Table::Census2020(census2020::Table::Pl94_171(census2020::pl94_171::P1))
+				}
+				(Schema::Census2020(census2020::Schema::Pl94_171), "p2") => {
+					Table::Census2020(census2020::Table::Pl94_171(census2020::pl94_171::P2))
+				}
+				(Schema::Census2020(census2020::Schema::Pl94_171), "p3") => {
+					Table::Census2020(census2020::Table::Pl94_171(census2020::pl94_171::P3))
+				}
+				(Schema::Census2020(census2020::Schema::Pl94_171), "p4") => {
+					Table::Census2020(census2020::Table::Pl94_171(census2020::pl94_171::P4))
+				}
+				(Schema::Census2020(census2020::Schema::Pl94_171), "h1") => {
+					Table::Census2020(census2020::Table::Pl94_171(census2020::pl94_171::H1))
+				}
+				(Schema::Census2020(census2020::Schema::Pl94_171), "p5") => {
+					Table::Census2020(census2020::Table::Pl94_171(census2020::pl94_171::P5))
+				}
+				(Schema::Census2020(census2020::Schema::Pl94_171), _) => unimplemented!(),
 			};
 
 			let locations: TableLocations = specs

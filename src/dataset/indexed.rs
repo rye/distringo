@@ -7,6 +7,7 @@ use super::packing_list::PackingList;
 use super::Dataset;
 
 use crate::census2010;
+use crate::census2020;
 use crate::FileBackedLogicalRecord;
 use crate::GeoId;
 use crate::GeographicalHeader;
@@ -106,6 +107,10 @@ impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 			match self.schema {
 				Schema::Census2010(census2010::Schema::Pl94_171) => Ok(Box::new(
 					crate::census2010::pl94_171::GeographicalHeader::new(line),
+				)),
+
+				Schema::Census2020(census2020::Schema::Pl94_171) => Ok(Box::new(
+					crate::census2020::pl94_171::GeographicalHeader::new(&line),
 				)),
 			}
 		} else {
