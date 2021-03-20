@@ -51,7 +51,9 @@ macro_rules! generate_fields {
 		$(
 			#[allow(dead_code)]
 			const $name: usize = $loc;
+		)+
 
+		$(
 			generate_field_getter!($container_type, $container_data_field, $name, $rest);
 		)+
 	};
