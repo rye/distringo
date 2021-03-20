@@ -12,10 +12,8 @@ pub enum Table {
 
 pub use Table::{H1, P1, P2, P3, P4, P5};
 
-const RI_GEO2018_2020_STYLE_EXAMPLE: &str = "PLST|RI|040|00|00|000|00|0000001|0400000US44|44|1|1|44|01219835|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||1060563703|67858968|Rhode Island|Rhode Island|A||614053|271266|+41.8697678|-071.5786246|00||";
-
 macro_rules! generate_field_getter {
-	($container_type:ty, $container_data_field:ident, $name:ident, [ $vis:vis , $getter_name:ident #> $pty:ty ]) => {
+	($container_type:ty, $container_data_field:ident, $name:ident, $width:literal, [ $vis:vis , $getter_name:ident #> $pty:ty ]) => {
 		#[allow(dead_code)]
 		impl $container_type {
 			#[must_use]
@@ -25,7 +23,20 @@ macro_rules! generate_field_getter {
 		}
 	};
 
-	($container_type:ty, $container_data_field:ident, $name:ident, [ $vis:vis , $getter_name:ident ]) => {
+	($container_type:ty, $container_data_field:ident, $name:ident, $width:literal, [ $vis:vis , $getter_name:ident #> $pty:ty | e.g. $expected:tt ]) => {
+		generate_field_getter!($container_type, $container_data_field, $name, $width, [ $vis , $getter_name #> $pty ]);
+
+		#[test]
+		fn $getter_name() {
+			let geo_header = <$container_type>::new(RI_GEO2018_2020_STYLE_EXAMPLE);
+			let expected = $expected;
+			assert_eq!(geo_header.$getter_name(), expected);
+		}
+	};
+
+
+
+	($container_type:ty, $container_data_field:ident, $name:ident, $width:literal, [ $vis:vis , $getter_name:ident ]) => {
 		#[allow(dead_code)]
 		impl $container_type {
 			#[must_use]
@@ -35,7 +46,18 @@ macro_rules! generate_field_getter {
 		}
 	};
 
-	($container_type:ty, $container_data_field:ident, $name:ident, [ $vis:vis , | $getter_name:ident | ]) => {
+	($container_type:ty, $container_data_field:ident, $name:ident, $width:literal, [ $vis:vis , $getter_name:ident e.g. $expected:literal ]) => {
+		generate_field_getter!($container_type, $container_data_field, $name, $width, [ $vis , $getter_name ]);
+
+		#[test]
+		fn $getter_name() {
+			let geo_header = <$container_type>::new(RI_GEO2018_2020_STYLE_EXAMPLE);
+			assert_eq!(geo_header.$getter_name(), $expected);
+		}
+	};
+
+
+	($container_type:ty, $container_data_field:ident, $name:ident, $width:literal, [ $vis:vis , | $getter_name:ident | ]) => {
 		#[allow(dead_code)]
 		impl $container_type {
 			#[must_use]
@@ -44,125 +66,145 @@ macro_rules! generate_field_getter {
 			}
 		}
 	};
+
+	($container_type:ty, $container_data_field:ident, $name:ident, $width:literal, [ $vis:vis , | $getter_name:ident | e.g. $expected:literal ]) => {
+		generate_field_getter!($container_type, $container_data_field, $name, $width, [ $vis , |$getter_name| ]);
+
+		#[test]
+		fn $getter_name() {
+			let geo_header = <$container_type>::new(RI_GEO2018_2020_STYLE_EXAMPLE);
+			assert_eq!(geo_header.$getter_name(), $expected);
+		}
+	};
+}
+
+macro_rules! generate_fields_inner {
+	($container_type:ident, $container_data_field:ident, $name:ident, {}) => {};
+
+	($container_type:ident, $container_data_field:ident, $name:ident, { @ + $loc:literal w $width:literal - $rest:tt }) => {
+		#[allow(dead_code)]
+		const $name: usize = $loc;
+
+		generate_field_getter!($container_type, $container_data_field, $name, $width, $rest);
+	};
 }
 
 macro_rules! generate_fields {
-	($container_type:ident, $container_data_field:ident, $($name:ident @ + $loc:literal w $width:literal - $rest:tt),+) => {
+	($container_type:ident, $container_data_field:ident, $($name:ident $rest:tt),+) => {
 		$(
-			#[allow(dead_code)]
-			const $name: usize = $loc;
-		)+
-
-		$(
-			generate_field_getter!($container_type, $container_data_field, $name, $rest);
+			generate_fields_inner!($container_type, $container_data_field, $name, $rest);
 		)+
 	};
 }
+
+#[allow(dead_code)]
+const RI_GEO2018_2020_STYLE_EXAMPLE: &str = "PLST|RI|040|00|00|000|00|0000001|0400000US44|44|1|1|44|01219835|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||1060563703|67858968|Rhode Island|Rhode Island|A||614053|271266|+41.8697678|-071.5786246|00||";
 
 generate_fields!(
 	GeographicalHeader, data,
 
 	// Record codes
-	FILEID @ + 0 w 6 - [pub, fileid],
-	STUSAB @ + 1 w 2 - [pub, stusab],
-	SUMLEV @ + 2 w 3 - [pub, sumlev],
+	FILEID { @ + 0 w 6 - [pub, fileid e.g. "PLST"] },
+	STUSAB { @ + 1 w 2 - [pub, stusab e.g. "RI"] },
+	SUMLEV { @ + 2 w 3 - [pub, sumlev e.g. "040"] },
 	// TODO(rye) 2020 +field: GEOVAR.
-	GEOVAR @ + 3 w 2 - [pub, geovar],
-	GEOCOMP @ + 4 w 2 - [pub, geocomp],
-	CHARITER @ + 5 w 3 - [pub, chariter],
-	CIFSN @ + 6 w 2 - [pub, cifsn],
-	LOGRECNO @ + 7 w 7 - [pub, logrecno #> crate::LogicalRecordNumber],
+	GEOVAR { @ + 3 w 2 - [pub, geovar e.g. "00"] },
+	GEOCOMP { @ + 4 w 2 - [pub, geocomp e.g. "00"] },
+	CHARITER { @ + 5 w 3 - [pub, chariter e.g. "000"] },
+	CIFSN { @ + 6 w 2 - [pub, cifsn e.g. "00"] },
+	LOGRECNO { @ + 7 w 7 - [pub, logrecno #> crate::LogicalRecordNumber | e.g. 1_u64] },
 
 	// Geographic Area Codes
-	GEOID @ + 0 w 0 - [ pub, geoid ],
-	GEOCODE @ + 0 w 0 - [ pub, geocode ],
-	REGION @ + 0 w 0 - [ pub, region ],
-	DIVISION @ + 0 w 0 - [ pub, division ],
-	STATE @ + 0 w 0 - [ pub, state ],
-	STATENS @ + 0 w 0 - [ pub, statens ],
-	COUNTY @ + 0 w 0 - [ pub, county ],
-	COUNTYCC @ + 0 w 0 - [ pub, countycc ],
-	COUNTYNS @ + 0 w 0 - [ pub, countyns ],
-	COUSUB @ + 0 w 0 - [ pub, cousub ],
-	COUSUBCC @ + 0 w 0 - [ pub, cousubcc ],
-	COUSUBNS @ + 0 w 0 - [ pub, cousubns ],
-	SUBMCD @ + 0 w 0 - [ pub, submcd ],
-	SUBMCDCC @ + 0 w 0 - [ pub, submcdcc ],
-	SUBMCDNS @ + 0 w 0 - [ pub, submcdns ],
-	ESTATE @ + 0 w 0 - [ pub, estate ],
-	ESTATECC @ + 0 w 0 - [ pub, estatecc ],
-	ESTATENS @ + 0 w 0 - [ pub, estatens ],
-	CONCIT @ + 0 w 0 - [ pub, concit ],
-	CONCITCC @ + 0 w 0 - [ pub, concitcc ],
-	CONCITNS @ + 0 w 0 - [ pub, concitns ],
-	PLACE @ + 0 w 0 - [ pub, place ],
-	PLACECC @ + 0 w 0 - [ pub, placecc ],
-	PLACENS @ + 0 w 0 - [ pub, placens ],
-	TRACT @ + 0 w 0 - [ pub, tract ],
-	BLKGRP @ + 0 w 0 - [ pub, blkgrp ],
-	BLOCK @ + 0 w 0 - [ pub, block ],
-	AIANHH @ + 0 w 0 - [ pub, aianhh ],
-	AIHHTLI @ + 0 w 0 - [ pub, aihhtli ],
-	AIANHHFP @ + 0 w 0 - [ pub, aianhhfp ],
-	AIANHHCC @ + 0 w 0 - [ pub, aianhhcc ],
-	AIANHHNS @ + 0 w 0 - [ pub, aianhhns ],
-	AITS @ + 0 w 0 - [ pub, aits ],
-	AITSFP @ + 0 w 0 - [ pub, aitsfp ],
-	AITSCC @ + 0 w 0 - [ pub, aitscc ],
-	AITSNS @ + 0 w 0 - [ pub, aitsns ],
-	TTRACT @ + 0 w 0 - [ pub, ttract ],
-	TBLKGRP @ + 0 w 0 - [ pub, tblkgrp ],
-	ANRC @ + 0 w 0 - [ pub, anrc ],
-	ANRCCC @ + 0 w 0 - [ pub, anrccc ],
-	ANRCNS @ + 0 w 0 - [ pub, anrcns ],
-	CBSA @ + 0 w 0 - [ pub, cbsa ],
-	MEMI @ + 0 w 0 - [ pub, memi ],
-	CSA @ + 0 w 0 - [ pub, csa ],
-	METDIV @ + 0 w 0 - [ pub, metdiv ],
-	NECTA @ + 0 w 0 - [ pub, necta ],
-	NMEMI @ + 0 w 0 - [ pub, nmemi ],
-	CNECTA @ + 0 w 0 - [ pub, cnecta ],
-	NECTADIV @ + 0 w 0 - [ pub, nectadiv ],
-	CBSAPCI @ + 0 w 0 - [ pub, cbsapci ],
-	NECTAPCI @ + 0 w 0 - [ pub, nectapci ],
-	UA @ + 0 w 0 - [ pub, ua ],
-	UATYPE @ + 0 w 0 - [ pub, uatype ],
-	UR @ + 0 w 0 - [ pub, ur ],
-	CD116 @ + 0 w 0 - [ pub, cd116 ],
-	CD118 @ + 0 w 0 - [ pub, cd118 ],
-	CD119 @ + 0 w 0 - [ pub, cd119 ],
-	CD120 @ + 0 w 0 - [ pub, cd120 ],
-	CD121 @ + 0 w 0 - [ pub, cd121 ],
-	SLDU18 @ + 0 w 0 - [ pub, sldu18 ],
-	SLDU22 @ + 0 w 0 - [ pub, sldu22 ],
-	SLDU24 @ + 0 w 0 - [ pub, sldu24 ],
-	SLDU26 @ + 0 w 0 - [ pub, sldu26 ],
-	SLDU28 @ + 0 w 0 - [ pub, sldu28 ],
-	SLDL18 @ + 0 w 0 - [ pub, sldl18 ],
-	SLDL22 @ + 0 w 0 - [ pub, sldl22 ],
-	SLDL24 @ + 0 w 0 - [ pub, sldl24 ],
-	SLDL26 @ + 0 w 0 - [ pub, sldl26 ],
-	SLDL28 @ + 0 w 0 - [ pub, sldl28 ],
-	VTD @ + 0 w 0 - [ pub, vtd ],
-	VTDI @ + 0 w 0 - [ pub, vtdi ],
-	ZCTA @ + 0 w 0 - [ pub, zcta ],
-	SDELM @ + 0 w 0 - [ pub, sdelm ],
-	SDSEC @ + 0 w 0 - [ pub, sdsec ],
-	SDUNI @ + 0 w 0 - [ pub, sduni ],
-	PUMA @ + 0 w 0 - [ pub, puma ],
-	AREALAND @ + 0 w 0 - [ pub, arealand ],
-	AREAWATR @ + 0 w 0 - [ pub, areawatr ],
-	BASENAME @ + 0 w 0 - [ pub, basename ],
-	NAME @ + 0 w 0 - [ pub, name ],
-	FUNCSTAT @ + 0 w 0 - [ pub, funcstat ],
-	GCUNI @ + 0 w 0 - [ pub, gcuni ],
-	POP100 @ + 0 w 0 - [ pub, pop100 ],
-	HU100 @ + 0 w 0 - [ pub, hu100 ],
-	INTPTLAT @ + 0 w 0 - [ pub, intptlat ],
-	INTPTLON @ + 0 w 0 - [ pub, intptlon ],
-	LSADC @ + 0 w 0 - [ pub, lsadc ],
-	PARTFLAG @ + 0 w 0 - [ pub, partflag ],
-	UGA @ + 0 w 0 - [ pub, uga ]
+	GEOID {},
+	GEOCODE {},
+	REGION {},
+	DIVISION {},
+	STATE {},
+	STATENS {},
+	COUNTY {},
+	COUNTYCC {},
+	COUNTYNS {},
+	COUSUB {},
+	COUSUBCC {},
+	COUSUBNS {},
+	SUBMCD {},
+	SUBMCDCC {},
+	SUBMCDNS {},
+	ESTATE {},
+	ESTATECC {},
+	ESTATENS {},
+	CONCIT {},
+	CONCITCC {},
+	CONCITNS {},
+	PLACE {},
+	PLACECC {},
+	PLACENS {},
+	TRACT {},
+	BLKGRP {},
+	BLOCK {},
+	AIANHH {},
+	AIHHTLI {},
+	AIANHHFP {},
+	AIANHHCC {},
+	AIANHHNS {},
+	AITS {},
+	AITSFP {},
+	AITSCC {},
+	AITSNS {},
+	TTRACT {},
+	TBLKGRP {},
+	ANRC {},
+	ANRCCC {},
+	ANRCNS {},
+	CBSA {},
+	MEMI {},
+	CSA {},
+	METDIV {},
+	NECTA {},
+	NMEMI {},
+	CNECTA {},
+	NECTADIV {},
+	CBSAPCI {},
+	NECTAPCI {},
+	UA {},
+	UATYPE {},
+	UR {},
+	CD116 {},
+	CD118 {},
+	CD119 {},
+	CD120 {},
+	CD121 {},
+	SLDU18 {},
+	SLDU22 {},
+	SLDU24 {},
+	SLDU26 {},
+	SLDU28 {},
+	SLDL18 {},
+	SLDL22 {},
+	SLDL24 {},
+	SLDL26 {},
+	SLDL28 {},
+	VTD {},
+	VTDI {},
+	ZCTA {},
+	SDELM {},
+	SDSEC {},
+	SDUNI {},
+	PUMA {},
+	AREALAND {},
+	AREAWATR {},
+	BASENAME {},
+	// TODO(rye): Need this field to prevent recursion
+	NAME {},
+	FUNCSTAT {},
+	GCUNI {},
+	POP100 {},
+	HU100 {},
+	INTPTLAT {},
+	INTPTLON {},
+	LSADC {},
+	PARTFLAG {},
+	UGA {}
 );
 
 pub struct GeographicalHeader {
@@ -170,7 +212,7 @@ pub struct GeographicalHeader {
 }
 
 impl GeographicalHeader {
-	pub fn new(data: String) -> Self {
+	pub fn new(data: &str) -> Self {
 		Self {
 			data: data.split('|').map(str::to_owned).collect(),
 		}
