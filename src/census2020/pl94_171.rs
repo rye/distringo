@@ -194,10 +194,11 @@ generate_fields!(
 	SDSEC {},
 	SDUNI {},
 	PUMA {},
+
+	// Area Characteristics
 	AREALAND {},
 	AREAWATR {},
 	BASENAME {},
-	// TODO(rye): Need this field to prevent recursion
 	NAME {},
 	FUNCSTAT {},
 	GCUNI {},
@@ -207,6 +208,8 @@ generate_fields!(
 	INTPTLON {},
 	LSADC {},
 	PARTFLAG {},
+
+	// Special Area Codes
 	UGA {}
 );
 
