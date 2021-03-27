@@ -153,10 +153,10 @@ impl IndexedDataset {
 
 		Ok(Self {
 			schema,
-			geographical_header,
 			header_index,
 			tabular_index,
 			table_locations,
+			geographical_header,
 			tabular_files,
 			rows,
 		})
