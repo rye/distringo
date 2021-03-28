@@ -248,7 +248,7 @@ impl IndexedDataset {
 						let split: Vec<&str> = buf.split('|').collect();
 
 						let logrecno = split[7];
-						let geoid = split[8];
+						let geoid = split[9];
 
 						Some((logrecno.parse()?, geoid.to_string(), pos))
 					}

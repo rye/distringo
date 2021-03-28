@@ -143,10 +143,10 @@ fn main() -> distringo::Result<()> {
 		vec![&rec_a, &rec_b, &rec_c]
 	);
 
-	let logrecno = ds.get_logical_record_number_for_geoid("7500000US440070184001012")?;
+	let logrecno = ds.get_logical_record_number_for_geoid("440070184001012")?;
 	assert_eq!(logrecno, 19_200);
 
-	let header = ds.get_header_for_geoid("7500000US440070184001012")?;
+	let header = ds.get_header_for_geoid("440070184001012")?;
 	assert_eq!(header.name(), "Block 1012");
 	assert_eq!(header.logrecno(), 19_200);
 
