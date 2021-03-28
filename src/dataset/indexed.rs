@@ -82,7 +82,8 @@ impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 
 	fn get_logical_record_number_for_geoid(&self, geoid: &str) -> Result<u64> {
 		if let Some(index) = &self.header_index {
-			let result: &(LogicalRecordNumber, u64) = index.get(geoid).unwrap();
+			let result: &(LogicalRecordNumber, u64) =
+				index.get(geoid).ok_or(crate::Error::InvalidGeoId)?;
 
 			let logrecno: LogicalRecordNumber = result.0;
 

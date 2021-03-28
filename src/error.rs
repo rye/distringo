@@ -10,6 +10,8 @@ pub enum Error {
 	GeoJson(geojson::Error),
 	ParseInt(num::ParseIntError),
 
+	InvalidGeoId,
+
 	InvalidServerHost,
 	InvalidServerPort,
 }
