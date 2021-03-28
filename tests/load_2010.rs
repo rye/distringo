@@ -1,13 +1,16 @@
 use distringo::Dataset;
 
-/// Simple loading example
-///
-/// Reads a packing list from
+#[test]
 fn main() -> distringo::Result<()> {
 	simple_logger::init_with_level(log::Level::Trace).unwrap();
 
-	let ds = distringo::IndexedDataset::from_packing_list_file("data/in2010.pl.prd.packinglist.txt")?
-		.index()?;
+	let filename = std::path::PathBuf::from(file!())
+		.parent()
+		.expect("what")
+		.join("data")
+		.join("in2010.pl.prd.packinglist.txt.trim");
+
+	let ds = distringo::IndexedDataset::from_packing_list_file(filename)?.index()?;
 
 	let logrecno: distringo::LogicalRecordNumber = 335_180;
 
