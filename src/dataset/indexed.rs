@@ -57,6 +57,10 @@ impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 
 						let mut reader = csv::ReaderBuilder::new()
 							.has_headers(false)
+							.delimiter(match self.schema {
+								Schema::Census2010(_) => b',',
+								Schema::Census2020(_) => b'|',
+							})
 							.from_reader(reader);
 						let mut record = csv::StringRecord::new();
 						reader
