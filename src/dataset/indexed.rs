@@ -227,26 +227,36 @@ impl IndexedDataset {
 			let bytes_read = reader.read_line(&mut buf)?;
 
 			if bytes_read > 0 {
-				let logrecno = &buf[18..25];
-				let state_fips = &buf[27..29];
-				let county = &buf[29..32];
-				let tract = &buf[54..60];
-				let block = &buf[61..65];
+				if let Some((logrecno, geoid, pos)) = match self.schema {
+					Schema::Census2010(_) => {
+						let (logrecno, state_fips, county, tract, block) = (
+							&buf[18..25],
+							&buf[27..29],
+							&buf[29..32],
+							&buf[54..60],
+							&buf[61..65],
+						);
 
-				match (state_fips, county, tract, block) {
-					(_s, "   ", "      ", "    ") => {}
-					(_s, _c, "      ", "    ") => {}
-					(_s, _c, _t, "    ") => {}
-					(s, c, t, b) => {
-						let logrecno: LogicalRecordNumber = logrecno.parse()?;
-						let geoid: GeoId = [s, c, t, b].concat();
-
-						assert!(!new_header_index.contains_key(&geoid));
-
-						new_header_index.insert(geoid, (logrecno, pos));
+						match (state_fips, county, tract, block) {
+							(_s, "   ", "      ", "    ") => None,
+							(_s, _c, "      ", "    ") => None,
+							(_s, _c, _t, "    ") => None,
+							(s, c, t, b) => Some((logrecno.parse()?, [s, c, t, b].concat(), pos)),
+						}
 					}
-				};
+					Schema::Census2020(_) => {
+						let split: Vec<&str> = buf.split('|').collect();
 
+						let logrecno = split[7];
+						let geoid = split[8];
+
+						Some((logrecno.parse()?, geoid.to_string(), pos))
+					}
+				} {
+					assert!(!new_header_index.contains_key(&geoid));
+
+					new_header_index.insert(geoid, (logrecno, pos));
+				}
 				pos += bytes_read as u64;
 				buf.clear();
 			} else {
