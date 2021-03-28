@@ -68,6 +68,24 @@ impl PackingList {
 		Ok(parsed)
 	}
 
+	pub fn new(
+		schema: Schema,
+		directory: Option<PathBuf>,
+		table_locations: FnvHashMap<Table, TableLocations>,
+		tabular_files: FnvHashMap<u32, PathBuf>,
+		geographical_header_file: PathBuf,
+		rows: usize,
+	) -> Self {
+		Self {
+			schema,
+			directory,
+			table_locations,
+			tabular_files,
+			geographical_header_file,
+			rows,
+		}
+	}
+
 	pub fn schema(&self) -> Schema {
 		self.schema
 	}
