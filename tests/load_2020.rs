@@ -69,9 +69,18 @@ fn main() -> distringo::Result<()> {
 	let tabular_files = {
 		let mut map = FnvHashMap::default();
 
-		map.insert(0_u32, std::path::PathBuf::from("ri000012018_2020Style.pl.trim"));
-		map.insert(1_u32, std::path::PathBuf::from("ri000022018_2020Style.pl.trim"));
-		map.insert(2_u32, std::path::PathBuf::from("ri000032018_2020Style.pl.trim"));
+		map.insert(
+			0_u32,
+			std::path::PathBuf::from("ri000012018_2020Style.pl.trim"),
+		);
+		map.insert(
+			1_u32,
+			std::path::PathBuf::from("ri000022018_2020Style.pl.trim"),
+		);
+		map.insert(
+			2_u32,
+			std::path::PathBuf::from("ri000032018_2020Style.pl.trim"),
+		);
 
 		map
 	};
