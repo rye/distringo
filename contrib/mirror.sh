@@ -1,6 +1,15 @@
 #!/bin/sh
 
-collection="$1"
-year="$2"
+year="$1"
 
-wget -m "ftp://ftp2.census.gov/geo/tiger/TIGER${year}/${collection}/${year}/"
+case "$year" in
+
+	"2010")
+		wget -m "ftp://ftp2.census.gov/geo/tiger/TIGER2010/"
+		;;
+
+	"2020")
+		wget -m "ftp://ftp2.census.gov/geo/tiger/TIGER2020PL/STATE/"
+		;;
+
+esac
