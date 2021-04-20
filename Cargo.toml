@@ -9,7 +9,7 @@ edition = "2018"
 config = { version = "0.11.0", default_features = false, features = ["json", "yaml"] }
 csv = "1.1.6"
 fnv = "1.0.7"
-geo = "0.17.1"
+geo = "0.18.0"
 geojson = "0.22.2"
 log = "0.4.14"
 lazy_static = "1.4.0"
