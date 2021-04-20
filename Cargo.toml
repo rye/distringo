@@ -10,7 +10,7 @@ config = { version = "0.11.0", default_features = false, features = ["json", "ya
 csv = "1.1.6"
 fnv = "1.0.7"
 geo = "0.17.1"
-geojson = "0.22.0"
+geojson = "0.22.2"
 log = "0.4.14"
 lazy_static = "1.4.0"
 regex = "1.4.2"
