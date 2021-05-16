@@ -20,5 +20,5 @@ tokio = { version = "1.6.0", features = ["macros", "rt-multi-thread"] }
 tokio-stream = { version = "0.1.6", default_features = false }
 warp = { version = "0.3.1", features = ["compression"] }
 lazy_static = "1.4.0"
-serde = { version = "1.0.124", features = ["derive"] }
+serde = { version = "1.0.126", features = ["derive"] }
 distringo = { path = ".." }
