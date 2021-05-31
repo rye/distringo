@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [16.x]
+        node-version: [16.x, 14.x]
     steps:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
