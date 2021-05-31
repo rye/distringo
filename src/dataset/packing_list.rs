@@ -1,5 +1,7 @@
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::{
+	fs::File,
+	path::{Path, PathBuf},
+};
 
 use fnv::FnvHashMap;
 use regex::Regex;
@@ -26,14 +28,10 @@ lazy_static::lazy_static! {
 			.expect("regex parse failed");
 }
 
-use crate::census2010;
-use crate::census2020;
-use crate::Result;
-use crate::Schema;
-use crate::Table;
-use crate::TableLocations;
-use crate::TableSegmentLocation;
-use crate::TableSegmentSpecifier;
+use crate::{
+	census2010, census2020, Result, Schema, Table, TableLocations, TableSegmentLocation,
+	TableSegmentSpecifier,
+};
 
 pub struct PackingList {
 	schema: Schema,
@@ -56,12 +54,13 @@ fn read_file_to_string<P: AsRef<Path>>(path: P) -> Result<String> {
 
 impl PackingList {
 	pub fn from_file<P: AsRef<Path>>(file_path: P) -> Result<Self> {
+		use core::str::FromStr;
+
 		// It's generally quite a bit faster to just load the entire packing list
 		// to a file and then do in-memory operations than deal with potential disk
 		// buffering issues, so we first load to string.
 		let data: String = read_file_to_string(&file_path)?;
 
-		use core::str::FromStr;
 		let mut parsed: Self = Self::from_str(&data)?;
 		parsed.directory = file_path.as_ref().parent().map(ToOwned::to_owned);
 

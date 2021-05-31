@@ -1,22 +1,16 @@
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::{
+	collections::BTreeMap,
+	fs::File,
+	io::{BufRead, BufReader, Seek},
+	path::Path,
+};
 
-use super::packing_list::PackingList;
-use super::Dataset;
-
-use crate::census2010;
-use crate::census2020;
-use crate::FileBackedLogicalRecord;
-use crate::GeoId;
-use crate::GeographicalHeader;
-use crate::LogicalRecordNumber;
-use crate::LogicalRecordPositionIndex;
-use crate::Result;
-use crate::Schema;
-use crate::Table;
-use crate::TableLocations;
+use crate::{
+	census2010, census2020,
+	dataset::{packing_list::PackingList, Dataset},
+	FileBackedLogicalRecord, GeoId, GeographicalHeader, LogicalRecordNumber,
+	LogicalRecordPositionIndex, Result, Schema, Table, TableLocations,
+};
 
 use fnv::FnvHashMap;
 
@@ -49,7 +43,6 @@ impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 						let corresponding_logrec_position_index = index.get(&idx).unwrap();
 						let offset: u64 = corresponding_logrec_position_index[number];
 
-						use std::io::Seek;
 						let mut reader = BufReader::new(file);
 						reader
 							.seek(std::io::SeekFrom::Start(offset))
@@ -103,7 +96,6 @@ impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 
 			let mut reader = BufReader::new(file);
 
-			use std::io::Seek;
 			reader.seek(std::io::SeekFrom::Start(line_offset))?;
 
 			let mut line = String::new();
