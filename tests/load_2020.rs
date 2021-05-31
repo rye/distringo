@@ -7,7 +7,10 @@ use fnv::FnvHashMap;
 /// Reads a packing list from
 #[test]
 fn main() -> distringo::Result<()> {
-	simple_logger::init_with_level(log::Level::Trace).unwrap();
+	simple_logger::SimpleLogger::new()
+		.with_level(log::LevelFilter::Trace)
+		.init()
+		.unwrap();
 
 	let schema = distringo::Schema::Census2020(distringo::census2020::Schema::Pl94_171);
 

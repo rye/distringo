@@ -2,7 +2,10 @@ use distringo::Dataset;
 
 #[test]
 fn main() -> distringo::Result<()> {
-	simple_logger::init_with_level(log::Level::Trace).unwrap();
+	simple_logger::SimpleLogger::new()
+		.with_level(log::LevelFilter::Trace)
+		.init()
+		.unwrap();
 
 	let filename = std::path::PathBuf::from(file!())
 		.parent()
