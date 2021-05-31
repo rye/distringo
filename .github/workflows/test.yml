@@ -6,6 +6,28 @@ on:
   - cron: 0 0 * * *
 
 jobs:
+  test-client:
+    name: Test the Client Code
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [16.x]
+    steps:
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - uses: actions/checkout@v1
+    - name: Install JavaScript dependencies
+      run: |
+        cd client
+        npm install
+    - name: Run JavaScript tests
+      run: |
+        pwd
+        npm test
+
   check:
     name: Check the code
     runs-on: ubuntu-20.04
