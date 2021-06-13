@@ -61,7 +61,7 @@ jobs:
       run: |
         cargo test --workspace --all-features --no-fail-fast
       env:
-        CARGO_INCREMENTAL: '0'
+        CARGO_INCREMENTAL: 0
         RUSTFLAGS: >
           -Zprofile
           -Ccodegen-units=1
@@ -70,6 +70,7 @@ jobs:
           -Coverflow-checks=off
           -Zpanic_abort_tests
           -Cpanic=abort
+        RUSTDOCFLAGS: '-Cpanic=abort'
     - uses: actions-rs/grcov@v0.1
       with:
         config: .grcov.yml
