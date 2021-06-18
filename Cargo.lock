@@ -385,7 +385,7 @@ dependencies = [
  "criterion",
  "csv",
  "fnv",
- "geo",
+ "geo 0.18.0",
  "geojson",
  "lazy_static",
  "log",
@@ -568,6 +568,19 @@ checksum = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817"
 dependencies = [
  "typenum",
  "version_check",
+]
+
+[[package]]
+name = "geo"
+version = "0.17.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb5120badf60b67440af049f8c1a265aa44bdccc34027a5bb39eb3b081c56526"
+dependencies = [
+ "geo-types",
+ "geographiclib-rs",
+ "num-traits",
+ "robust",
+ "rstar",
 ]
 
 [[package]]
@@ -1053,7 +1066,7 @@ name = "palapelify"
 version = "0.1.0"
 dependencies = [
  "clap",
- "geo",
+ "geo 0.17.1",
  "geo-types",
  "geojson",
  "itertools 0.10.0",
@@ -1490,7 +1503,7 @@ dependencies = [
  "config",
  "distringo",
  "futures",
- "geo",
+ "geo 0.18.0",
  "geojson",
  "http",
  "hyper",
@@ -1670,9 +1683,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.6.1"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a38d31d7831c6ed7aad00aa4c12d9375fd225a6dd77da1d25b707346319a975"
+checksum = "c79ba603c337335df6ba6dd6afc38c38a7d5e1b0c871678439ea973cd62a118e"
 dependencies = [
  "autocfg",
  "bytes",
@@ -1682,6 +1695,7 @@ dependencies = [
  "num_cpus",
  "pin-project-lite",
  "tokio-macros",
+ "winapi",
 ]
 
 [[package]]
