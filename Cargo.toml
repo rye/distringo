@@ -22,11 +22,6 @@ criterion = "0.3.4"
 simple_logger = "1.11.0"
 serde_yaml = "0.8.17"
 
-[[bench]]
-name = "logical_record_position_index"
-path = "benches/index/logical_record_position.rs"
-harness = false
-
 [workspace]
 members = [
 	"palapelify",
