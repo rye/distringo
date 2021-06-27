@@ -23,3 +23,52 @@ trait Layout<'input> {
 
 mod census2010;
 mod header;
+
+#[derive(Debug, Clone, Default)]
+pub struct Dataset {
+	header_file: Option<std::path::PathBuf>,
+	tabular_files: Vec<Option<std::path::PathBuf>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedDataset<Key> {
+	header_file: std::ffi::OsString,
+	tabular_files: Vec<std::ffi::OsString>,
+	indexes: std::collections::HashMap<std::ffi::OsString, fnv::FnvHashMap<Key, usize>>,
+}
+
+use thiserror::Error;
+
+#[derive(Debug, Copy, Clone, Error)]
+enum DatasetError {
+	#[error("zero passed as tabular index")]
+	ZeroPassed,
+}
+
+impl Dataset {
+	pub fn new() -> Self {
+		Self { ..Default::default() }
+	}
+
+	pub fn header_file(mut self, header_file: std::path::PathBuf) -> anyhow::Result<Self> {
+		self.header_file = Some(header_file);
+		Ok(self)
+	}
+
+	pub fn tabular_file(mut self, index: usize, tabular_file: std::path::PathBuf) -> anyhow::Result<Self> {
+		let index = index.checked_sub(1).ok_or(DatasetError::ZeroPassed)?;
+
+		if index > self.tabular_files.len() {
+			self.tabular_files.resize(index, None);
+		}
+
+		self.tabular_files.insert(index, Some(tabular_file));
+
+		Ok(self)
+	}
+
+	pub fn index<Key>(mut self) -> anyhow::Result<IndexedDataset<Key>> {
+
+
+	}
+}
