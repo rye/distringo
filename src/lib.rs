@@ -5,3 +5,6 @@ pub use error::*;
 
 mod dataset;
 pub use dataset::*;
+
+#[cfg(test)]
+mod tests {}

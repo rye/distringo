@@ -36,8 +36,7 @@ pub struct IndexedFile<Key: core::cmp::Eq + core::hash::Hash> {
 	index: fnv::FnvHashMap<Key, usize>,
 }
 
-pub struct LogicalRecordOffsetIndex {
-}
+pub struct LogicalRecordOffsetIndex {}
 
 impl core::convert::TryFrom<std::path::PathBuf> for IndexedFile<usize> {
 	type Error = anyhow::Error;
@@ -63,8 +62,8 @@ impl core::convert::TryFrom<std::path::PathBuf> for IndexedFile<usize> {
 		loop {
 			let mut line: String = String::new();
 
-			use std::io::BufRead;
 			use core::convert::TryInto;
+			use std::io::BufRead;
 
 			logrecno += 1;
 			let offset: usize = buf_reader.stream_position()?.try_into().unwrap();
@@ -87,12 +86,11 @@ impl core::convert::TryFrom<std::path::PathBuf> for IndexedFile<usize> {
 
 impl<Key: core::cmp::Eq + core::hash::Hash> IndexedFile<Key> {
 	pub fn get_line(&self, key: Key) -> Option<String> {
-		use std::io::{Seek, SeekFrom,BufReader,BufRead};
+		use std::io::{BufRead, BufReader, Seek, SeekFrom};
 
 		let mut reader = BufReader::new(&self.file);
 		let mut buf: String = String::new();
 		let offset = self.index.get(&key)?;
-
 
 		reader.seek(SeekFrom::Start(*offset as u64)).ok()?;
 		reader.read_line(&mut buf).ok()?;
@@ -115,7 +113,10 @@ impl<Key: core::cmp::Eq + core::hash::Hash> IndexedDataset<Key> {
 
 impl<Key: core::cmp::Eq + core::hash::Hash> IndexedDataset<Key> {
 	pub fn tabular_file(&self, number: usize) -> Option<&IndexedFile<Key>> {
-		number.checked_sub(1).map(|n| self.tabular_files.get(n)).flatten()
+		number
+			.checked_sub(1)
+			.map(|n| self.tabular_files.get(n))
+			.flatten()
 	}
 }
 
@@ -131,7 +132,9 @@ pub enum DatasetError {
 
 impl Dataset {
 	pub fn new() -> Self {
-		Self { ..Default::default() }
+		Self {
+			..Default::default()
+		}
 	}
 
 	pub fn header_file(mut self, header_file: std::path::PathBuf) -> anyhow::Result<Self> {
@@ -139,7 +142,11 @@ impl Dataset {
 		Ok(self)
 	}
 
-	pub fn tabular_file(mut self, index: usize, tabular_file: std::path::PathBuf) -> anyhow::Result<Self> {
+	pub fn tabular_file(
+		mut self,
+		index: usize,
+		tabular_file: std::path::PathBuf,
+	) -> anyhow::Result<Self> {
 		let index = index.checked_sub(1).ok_or(DatasetError::ZeroPassed)?;
 
 		if index > self.tabular_files.len() {
@@ -155,19 +162,29 @@ impl Dataset {
 	pub fn index(self) -> anyhow::Result<IndexedDataset<usize>> {
 		use core::convert::TryInto;
 
-		let header_file: IndexedFile<usize> = self.header_file.ok_or(DatasetError::NoHeader)?.try_into()?;
-		let tabular_files: anyhow::Result<Vec<IndexedFile<usize>>> = self.tabular_files.into_iter().map(|opt: Option<std::path::PathBuf>| -> anyhow::Result<IndexedFile<usize>> {
-			match opt {
-				Some(pathbuf) => pathbuf.try_into(),
-				None => Err(anyhow::anyhow!(DatasetError::NoneTabularPathFound)),
-			}
-		}).collect();
+		let header_file: IndexedFile<usize> =
+			self.header_file.ok_or(DatasetError::NoHeader)?.try_into()?;
+		let tabular_files: anyhow::Result<Vec<IndexedFile<usize>>> = self
+			.tabular_files
+			.into_iter()
+			.map(
+				|opt: Option<std::path::PathBuf>| -> anyhow::Result<IndexedFile<usize>> {
+					match opt {
+						Some(pathbuf) => pathbuf.try_into(),
+						None => Err(anyhow::anyhow!(DatasetError::NoneTabularPathFound)),
+					}
+				},
+			)
+			.collect();
 
 		let tabular_files: Vec<IndexedFile<usize>> = tabular_files?;
 
 		Ok(IndexedDataset {
 			header_file,
-			tabular_files
+			tabular_files,
 		})
 	}
 }
+
+#[cfg(test)]
+mod tests {}

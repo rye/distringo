@@ -9,3 +9,6 @@ pub trait Field:
 	Sized + core::fmt::Debug + Copy + Clone + PartialEq + Eq + core::hash::Hash
 {
 }
+
+#[cfg(test)]
+mod tests {}
