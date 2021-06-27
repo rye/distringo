@@ -4,7 +4,7 @@
 //! of those generics.
 
 /// A type that can locate, _on a given line_, where a field lives.
-trait DelimiterlessLayout<'a>: Layout<'a> {
+trait DelimiterlessLayout<'input>: Layout<'input> {
 	fn get_span(field: &Self::Field) -> core::ops::Range<usize>;
 }
 
