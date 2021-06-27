@@ -1,4 +1,5 @@
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[allow(clippy::upper_case_acronyms)]
 enum Field {
 	FILEID,
 	STUSAB,
