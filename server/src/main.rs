@@ -1,4 +1,4 @@
-pub mod server;
+/*pub mod server;
 
 #[tokio::main]
 async fn main() -> distringo::Result<()> {
@@ -27,3 +27,4 @@ async fn main() -> distringo::Result<()> {
 	plan.prepare()?;
 	plan.execute().await
 }
+*/
