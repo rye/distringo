@@ -1,65 +1,42 @@
-/*use distringo::Dataset;
+use std::path::PathBuf;
+
+fn data_directory() -> PathBuf {
+	PathBuf::from(file!())
+		.parent()
+		.expect("could not get parent directory of current file... what?")
+		.join("data")
+}
 
 #[test]
-fn main() -> distringo::Result<()> {
+fn non_existent_tabular_file_errors() -> anyhow::Result<()> {
+	let data_directory = data_directory();
+
+	assert!(distringo::Dataset::new()
+		.header_file(data_directory.join("ingeo2010.pl.trim"))?
+		.tabular_file(1, data_directory.join("in000012010.pl.trim"))?
+		.tabular_file(2, data_directory.join("in000022010.pl.trim"))?
+		.tabular_file(3, data_directory.join("in000032010.pl.trim-i-do-not-exist"))?
+		.index()
+		.is_err());
+
+	Ok(())
+}
+
+#[test]
+fn main() -> anyhow::Result<()> {
 	simple_logger::SimpleLogger::new()
 		.with_level(log::LevelFilter::Trace)
 		.init()
 		.unwrap();
 
-	let filename = std::path::PathBuf::from(file!())
-		.parent()
-		.expect("what")
-		.join("data")
-		.join("in2010.pl.prd.packinglist.txt.trim");
+	let data_directory = data_directory();
 
-	let ds = distringo::IndexedDataset::from_packing_list_file(filename)?.index()?;
-
-	let logrecno: distringo::LogicalRecordNumber = 335_180;
-
-	let record = ds.get_logical_record(logrecno)?;
-
-	let rec_a: Vec<&str> = vec![
-		"PLST", "IN", "000", "01", "0335180", "53", "52", "50", "0", "0", "2", "0", "0", "1", "1", "0",
-		"0", "1", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "53", "2", "51", "50", "48", "0", "0", "2", "0", "0", "1", "1", "0", "0", "1",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0",
-	];
-	let rec_b: Vec<&str> = vec![
-		"PLST", "IN", "000", "02", "0335180", "45", "45", "43", "0", "0", "2", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "45", "1", "44", "44", "42", "0", "0", "2", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
-		"0", "24", "24", "0",
-	];
-
-	let rec_a: csv::StringRecord = rec_a.into();
-	let rec_b: csv::StringRecord = rec_b.into();
-
-	assert_eq!(
-		record
-			.raw_records()
-			.values()
-			.collect::<Vec<&csv::StringRecord>>(),
-		vec![&rec_a, &rec_b]
-	);
-
-	let logrecno = ds.get_logical_record_number_for_geoid("181570052001013")?;
-	assert_eq!(logrecno, 335_180);
-
-	let header = ds.get_header_for_geoid("181570052001013")?;
-	assert_eq!(header.name(), "Block 1013");
-	assert_eq!(header.logrecno(), 335_180);
+	assert!(distringo::Dataset::new()
+		.header_file(data_directory.join("ingeo2010.pl.trim"))?
+		.tabular_file(1, data_directory.join("in000012010.pl.trim"))?
+		.tabular_file(2, data_directory.join("in000022010.pl.trim"))?
+		.index()
+		.is_ok());
 
 	Ok(())
 }
-*/
