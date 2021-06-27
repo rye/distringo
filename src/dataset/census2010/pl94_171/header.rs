@@ -147,7 +147,7 @@ impl crate::dataset::Layout<'_> for Pl94_171Layout {
 			.filter_map(|field| {
 				let span = s[Self::get_span(field)].trim();
 
-				if span.len() > 0 {
+				if !span.is_empty() {
 					Some((field, span))
 				} else {
 					None
