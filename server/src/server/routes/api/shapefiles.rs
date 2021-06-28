@@ -138,14 +138,14 @@ mod tests {
 		#[test]
 		fn found_returns_200_ok() {
 			let (id, map) = generate_id_and_shapefiles();
-			let response = super::super::show(&map, &id);
+			let response = super::super::show(map, &id);
 			assert_eq!(response.status(), hyper::StatusCode::OK);
 		}
 
 		#[test]
 		fn found_returns_correct_headers() {
 			let (id, map) = generate_id_and_shapefiles();
-			let response = super::super::show(&map, &id);
+			let response = super::super::show(map, &id);
 			assert_eq!(
 				response
 					.headers()
@@ -182,7 +182,7 @@ mod tests {
 		#[tokio::test]
 		async fn found_returns_correct_body() {
 			let (id, map) = generate_id_and_shapefiles();
-			let response = super::super::show(&map, &id);
+			let response = super::super::show(map, &id);
 			assert_response_body_eq!(response, "{\"coordinates\":[0.0,0.0],\"type\":\"Point\"}");
 		}
 
@@ -190,7 +190,7 @@ mod tests {
 		fn not_found_returns_404() {
 			let (_id, map) = generate_id_and_shapefiles();
 
-			let response = super::super::show(&map, &"<some unknown id>".to_string());
+			let response = super::super::show(map, &"<some unknown id>".to_string());
 
 			assert_eq!(response.status(), hyper::StatusCode::NOT_FOUND);
 		}
