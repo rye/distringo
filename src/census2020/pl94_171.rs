@@ -228,7 +228,7 @@ impl GeographicalHeader {
 
 impl crate::GeographicalHeader for GeographicalHeader {
 	fn name(&self) -> &str {
-		&self.name()
+		self.name()
 	}
 
 	fn logrecno(&self) -> crate::LogicalRecordNumber {

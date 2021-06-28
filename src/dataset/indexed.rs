@@ -40,7 +40,7 @@ impl Dataset<FileBackedLogicalRecord, LogicalRecordNumber> for IndexedDataset {
 					.tabular_files
 					.iter()
 					.map(|(idx, file)| -> (u32, csv::StringRecord) {
-						let corresponding_logrec_position_index = index.get(&idx).unwrap();
+						let corresponding_logrec_position_index = index.get(idx).unwrap();
 						let offset: u64 = corresponding_logrec_position_index[number];
 
 						let mut reader = BufReader::new(file);
